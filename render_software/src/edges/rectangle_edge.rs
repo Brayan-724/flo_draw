@@ -1,7 +1,6 @@
 use crate::edgeplan::*;
 
 use flo_canvas as canvas;
-use smallvec::*;
 
 use std::ops::{Range};
 use std::sync::*;
@@ -49,7 +48,7 @@ impl EdgeDescriptor for RectangleEdge {
     }
 
     #[inline]
-    fn intercepts(&self, y_positions: &[f64], output: &mut [SmallVec<[EdgeDescriptorIntercept; 2]>]) {
+    fn intercepts(&self, y_positions: &[f64], output: &mut [Vec<EdgeDescriptorIntercept>]) {
         for idx in 0..y_positions.len() {
             let y_pos = y_positions[idx];
 

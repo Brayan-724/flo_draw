@@ -7,7 +7,6 @@ use super::shape_descriptor::*;
 use super::shape_id::*;
 
 use flo_canvas as canvas;
-use smallvec::*;
 
 use flo_sparse_array::*;
 use flo_canvas::curves::geo::*;
@@ -315,7 +314,7 @@ where
     ///
     pub fn intercepts_on_scanlines<'a>(&'a self, y_positions: &[f64], output: &mut [Vec<EdgePlanIntercept>]) {
         // Extend the edge intercepts to cover the number of y-positions we have (can be larger than needed but not smaller)
-        let mut edge_intercepts = vec![smallvec![]; y_positions.len()];
+        let mut edge_intercepts = vec![vec![]; y_positions.len()];
 
         let mut y_min = f64::MAX;
         let mut y_max = f64::MIN;

@@ -5,7 +5,6 @@ use flo_canvas::curves::geo::*;
 use flo_canvas::curves::line::*;
 
 use itertools::*;
-use smallvec::*;
 
 use std::ops::{Range};
 use std::sync::*;
@@ -226,7 +225,7 @@ impl Polyline {
     /// Fills in an intercept list given a list of lines that cross that position
     ///
     #[inline]
-    fn fill_intercepts_from_lines<'a>(y_pos: f64, lines: impl Iterator<Item=&'a PolylineLine>, intercepts: &mut SmallVec<[EdgeDescriptorIntercept; 2]>) {
+    fn fill_intercepts_from_lines<'a>(y_pos: f64, lines: impl Iterator<Item=&'a PolylineLine>, intercepts: &mut Vec<EdgeDescriptorIntercept>) {
         let mut last_direction = EdgeInterceptDirection::Toggle;
 
         for line in lines {
@@ -259,7 +258,7 @@ impl Polyline {
     /// Finds all of the intercepts along a line at a given y-position
     ///
     #[inline]
-    pub fn intercepts_on_line(&self, y_pos: f64, intercepts: &mut SmallVec<[EdgeDescriptorIntercept; 2]>) {
+    pub fn intercepts_on_line(&self, y_pos: f64, intercepts: &mut Vec<EdgeDescriptorIntercept>) {
         if let PolylineValue::Lines { space, .. } = &self.value {
             // All the lines passing through y_pos are included here (as ranges are exclusive, this will exclude the end point of the line)
             Self::fill_intercepts_from_lines(y_pos, space.data_at_point(y_pos), intercepts);
@@ -271,7 +270,7 @@ impl Polyline {
     ///
     /// Finds all of the intercepts along a line at an ordered set of y positions
     ///
-    pub fn intercepts_on_lines(&self, ordered_y_pos: &[f64], intercepts: &mut [SmallVec<[EdgeDescriptorIntercept; 2]>]) {
+    pub fn intercepts_on_lines(&self, ordered_y_pos: &[f64], intercepts: &mut [Vec<EdgeDescriptorIntercept>]) {
         // We need an epsilon value to ensure the requested range covers all the y values
         const EPSILON: f64 = 1e-8;
 
@@ -412,7 +411,7 @@ impl EdgeDescriptor for PolylineNonZeroEdge {
         Arc::new(self.transform_as_self(transform))
     }
 
-    fn intercepts(&self, y_positions: &[f64], output: &mut [SmallVec<[EdgeDescriptorIntercept; 2]>]) {
+    fn intercepts(&self, y_positions: &[f64], output: &mut [Vec<EdgeDescriptorIntercept>]) {
         self.polyline.intercepts_on_lines(y_positions, output)
     }
 
@@ -487,7 +486,7 @@ impl EdgeDescriptor for PolylineEvenOddEdge {
         Arc::new(self.transform_as_self(transform))
     }
 
-    fn intercepts(&self, y_positions: &[f64], output: &mut [SmallVec<[EdgeDescriptorIntercept; 2]>]) {
+    fn intercepts(&self, y_positions: &[f64], output: &mut [Vec<EdgeDescriptorIntercept>]) {
         self.polyline.intercepts_on_lines(y_positions, output);
 
         for intercepts in output.iter_mut() {

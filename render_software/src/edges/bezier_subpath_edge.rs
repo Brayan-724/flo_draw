@@ -502,7 +502,7 @@ impl EdgeDescriptor for BezierSubpathEvenOddEdge {
     }
 
     #[inline]
-    fn intercepts(&self, y_positions: &[f64], output: &mut [SmallVec<[EdgeDescriptorIntercept; 2]>]) {
+    fn intercepts(&self, y_positions: &[f64], output: &mut [Vec<EdgeDescriptorIntercept>]) {
         let mut y_pos_iter  = y_positions.iter();
         let mut output_iter = output.iter_mut();
 
@@ -579,7 +579,7 @@ impl EdgeDescriptor for BezierSubpathNonZeroEdge {
     }
 
     #[inline]
-    fn intercepts(&self, y_positions: &[f64], output: &mut [SmallVec<[EdgeDescriptorIntercept; 2]>]) {
+    fn intercepts(&self, y_positions: &[f64], output: &mut [Vec<EdgeDescriptorIntercept>]) {
         let mut y_pos_iter  = y_positions.iter();
         let mut output_iter = output.iter_mut();
 
@@ -608,7 +608,7 @@ impl EdgeDescriptor for BezierSubpathNonZeroEdge {
                         }
                     }).collect();
             } else {
-                *output = smallvec![];
+                output.clear();
             }
         }
     }

@@ -1,7 +1,6 @@
 use crate::edgeplan::*;
 
 use itertools::*;
-use smallvec::*;
 
 use std::ops::{Range};
 
@@ -58,7 +57,7 @@ impl ShardIntercept {
 ///
 /// We don't find maxima for peaks or minima for troughs, so one artifact this will introduce is that the subpixel peak or trough of a shape will be cut off.
 ///
-fn resolve_shards(previous_line: &SmallVec<[EdgeDescriptorIntercept; 2]>, next_line: &SmallVec<[EdgeDescriptorIntercept; 2]>) -> SmallVec<[ShardIntercept; 2]> {
+fn resolve_shards(previous_line: &Vec<EdgeDescriptorIntercept>, next_line: &Vec<EdgeDescriptorIntercept>) -> Vec<ShardIntercept> {
     // Mix the previous and next lines and then sort them by edge position
     let mut sorted_lines =
         previous_line.iter().map(|intercept| (intercept, false))
@@ -73,7 +72,7 @@ fn resolve_shards(previous_line: &SmallVec<[EdgeDescriptorIntercept; 2]>, next_l
 
     // When sorted this way, this puts 'connected' intercepts next to each other, so we can create shards from any pair where the first is on the lower edge 
     // and the second is on the upper edge, then sort again by x position. The shape is a loop, and so the ordering is too
-    let mut shards                      = smallvec![];
+    let mut shards                      = vec![];
     let mut last_matched                = false;
     let mut initial_subpath_intercept   = &sorted_lines[0];
 
@@ -128,18 +127,18 @@ fn resolve_shards(previous_line: &SmallVec<[EdgeDescriptorIntercept; 2]>, next_l
 /// The start_y_positions and end_y_positions slices should be the same length. A slice will be generated for each pair of y values in these
 /// two slices.
 ///
-pub fn shard_intercepts_from_edge<'a, TEdge: EdgeDescriptor>(edge: &'a TEdge, start_y_positions: &'a [f64], end_y_positions: &'a [f64]) -> impl 'a + Iterator<Item=SmallVec<[ShardIntercept; 2]>>{
+pub fn shard_intercepts_from_edge<'a, TEdge: EdgeDescriptor>(edge: &'a TEdge, start_y_positions: &'a [f64], end_y_positions: &'a [f64]) -> impl 'a + Iterator<Item=Vec<ShardIntercept>>{
     // TODO: some edges can have multiple closed shapes (eg: closed lines, for example). This algorithm won't work with those because it assumes a single closed shape
 
     // Read the positions of the start intercepts for each y-position
-    let mut start_intercepts = vec![smallvec![]; start_y_positions.len()];
+    let mut start_intercepts = vec![vec![]; start_y_positions.len()];
     edge.intercepts(start_y_positions, &mut start_intercepts);
 
     start_intercepts.iter_mut()
         .for_each(|intercept_line| intercept_line.sort_by(|a, b| a.x_pos.total_cmp(&b.x_pos)));
 
     // Read the end intercepts (TODO: can maybe speed this up and only read the last one as very often end_y_positions[x] = start_y_positions[x+1])
-    let mut end_intercepts = vec![smallvec![]; end_y_positions.len()];
+    let mut end_intercepts = vec![vec![]; end_y_positions.len()];
     edge.intercepts(end_y_positions, &mut end_intercepts);
 
     // TODO: can avoid sorting things that we already fetched with the start intercepts
@@ -158,12 +157,12 @@ pub fn shard_intercepts_from_edge<'a, TEdge: EdgeDescriptor>(edge: &'a TEdge, st
 
             if previous_line.len() == 0 || next_line.len() == 0 {
                 // There are no shards in an empty line, so the other line doesn't matter (this is commonly the initial/final line for a convex shape)
-                intercepts = smallvec![];
+                intercepts = vec![];
             } else if previous_line.len() == next_line.len() && false {
                 // TODO: is this optimisation worth it? It's faster to just match everything rather than resolve them, but the time is spent elsewhere at the moment
 
                 // Try the simple case, and then try finding the nearest matches if it fails
-                intercepts = smallvec![];
+                intercepts = vec![];
 
                 for (first, second) in previous_line.iter().zip(next_line.iter()) {
                     if first.direction != second.direction || first.position.0 != second.position.0 {

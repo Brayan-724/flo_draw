@@ -4,7 +4,6 @@ use super::polyline_edge::*;
 use crate::edgeplan::*;
 
 use flo_canvas as canvas;
-use smallvec::*;
 
 use std::sync::*;
 
@@ -129,7 +128,7 @@ impl EdgeDescriptor for FlattenedBezierNonZeroEdge {
         Arc::new(self.transform_as_self(transform))
     }
 
-    fn intercepts(&self, y_positions: &[f64], output: &mut [SmallVec<[EdgeDescriptorIntercept; 2]>]) {
+    fn intercepts(&self, y_positions: &[f64], output: &mut [Vec<EdgeDescriptorIntercept>]) {
         match &self.path.value {
             FlattenedBezierSubpathValue::Polyline(line) => {
                 line.intercepts_on_lines(y_positions, output);
@@ -206,7 +205,7 @@ impl EdgeDescriptor for FlattenedBezierEvenOddEdge {
         Arc::new(self.transform_as_self(transform))
     }
 
-    fn intercepts(&self, y_positions: &[f64], output: &mut [SmallVec<[EdgeDescriptorIntercept; 2]>]) {
+    fn intercepts(&self, y_positions: &[f64], output: &mut [Vec<EdgeDescriptorIntercept>]) {
         match &self.path.value {
             FlattenedBezierSubpathValue::Polyline(line) => {
                 line.intercepts_on_lines(y_positions, output);

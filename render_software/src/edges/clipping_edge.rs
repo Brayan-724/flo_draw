@@ -1,7 +1,6 @@
 use crate::edgeplan::*;
 
 use flo_canvas as canvas;
-use smallvec::*;
 
 use std::sync::*;
 
@@ -188,11 +187,11 @@ where
         Arc::new(new_edge)
     }
 
-    fn intercepts(&self, y_positions: &[f64], output: &mut [smallvec::SmallVec<[EdgeDescriptorIntercept; 2]>]) {
+    fn intercepts(&self, y_positions: &[f64], output: &mut [Vec<EdgeDescriptorIntercept>]) {
         // Collect the clipping range for these y positions
         // TODO: often we'll clip against multiple shapes for the same set of y coordinates, so a way to cache these results would speed things up
         // TODO: need to use unique subpath IDs when returning different edges
-        let mut clip_intercepts = vec![smallvec![]; y_positions.len()];
+        let mut clip_intercepts = vec![vec![]; y_positions.len()];
 
         // Append the edges from each of the shapes making up the clip region
         for clip_edge in self.region.region.iter() {
@@ -205,7 +204,7 @@ where
         }
 
         // Collect the unclipped versions of the shape edges
-        let mut unclipped_shape = vec![smallvec![]; y_positions.len()];
+        let mut unclipped_shape = vec![vec![]; y_positions.len()];
         for shape_edge in self.shape_edges.iter() {
             shape_edge.intercepts(y_positions, &mut unclipped_shape);
         }
