@@ -83,7 +83,7 @@ pub fn triangle_45_degrees() {
     // Alpha values should switch sides
     let first_stack = spans[0].programs().collect::<Vec<_>>();
     assert!(first_stack.len() == 3);
-    if let PixelProgramPlan::LinearSourceOver(alpha1, alpha2) = first_stack[2] {
+    if let PixelProgramPlan::LinearMerge(alpha1, alpha2) = first_stack[2] {
         assert!(alpha1 < alpha2, "First span is not fading up {:?}", plan);
     } else {
         assert!(false, "First span is not blending {:?}", plan);
@@ -91,7 +91,7 @@ pub fn triangle_45_degrees() {
 
     let last_stack = spans[2].programs().collect::<Vec<_>>();
     assert!(last_stack.len() == 3);
-    if let PixelProgramPlan::LinearSourceOver(alpha1, alpha2) = last_stack[2] {
+    if let PixelProgramPlan::LinearMerge(alpha1, alpha2) = last_stack[2] {
         assert!(alpha1 > alpha2, "Last span is not fading down {:?}", plan);
     } else {
         assert!(false, "Last span is not blending {:?}", plan);
@@ -137,7 +137,7 @@ pub fn tall_triangle() {
         // Alpha values should switch sides
         let first_stack = spans[0].programs().collect::<Vec<_>>();
         assert!(first_stack.len() == 3);
-        if let PixelProgramPlan::LinearSourceOver(alpha1, alpha2) = first_stack[2] {
+        if let PixelProgramPlan::LinearMerge(alpha1, alpha2) = first_stack[2] {
             assert!(spans[0].x_range().end - spans[0].x_range().start >= 1.0, "First range uses less than a pixel {:?}, y={:?}, pix_y={:?}", plan, y, pix_y);
             assert!(alpha1 <= alpha2, "First span is not fading up {:?}", plan);
             assert!(alpha1 > 0.0 && alpha1 < 1.0, "First span has no alpha {:?}", plan);
@@ -147,7 +147,7 @@ pub fn tall_triangle() {
 
         let last_stack = spans[2].programs().collect::<Vec<_>>();
         assert!(last_stack.len() == 3);
-        if let PixelProgramPlan::LinearSourceOver(alpha1, alpha2) = last_stack[2] {
+        if let PixelProgramPlan::LinearMerge(alpha1, alpha2) = last_stack[2] {
             assert!(alpha1 >= alpha2, "Last span is not fading down {:?}", plan);
         } else {
             assert!(false, "Last span is not blending {:?}", plan);
@@ -186,7 +186,7 @@ fn subpixel_oblique_line() {
     let programs = spans[0].programs().collect::<Box<[_]>>();
     assert!(programs.len() == 5, "Programs: {:?}", programs);
     assert!(programs.iter().filter(|prog| if let PixelProgramPlan::StartBlend = prog { true } else { false }).count() == 2, "Incorrect number of StartBlend instructions: {:?}",programs);
-    assert!(programs.iter().filter(|prog| if let PixelProgramPlan::LinearSourceOver(_, _) = prog { true } else { false }).count() == 2, "Incorrect number of LinearSourecOver instructions: {:?}",programs);
+    assert!(programs.iter().filter(|prog| if let PixelProgramPlan::LinearMerge(_, _) = prog { true } else { false }).count() == 2, "Incorrect number of LinearSourecOver instructions: {:?}",programs);
 }
 
 #[test]
@@ -214,7 +214,7 @@ fn subpixel_vertical_line() {
     let programs = spans[0].programs().collect::<Box<[_]>>();
     assert!(programs.len() == 5, "Programs: {:?}", programs);
     assert!(programs.iter().filter(|prog| if let PixelProgramPlan::StartBlend = prog { true } else { false }).count() == 2, "Incorrect number of StartBlend instructions: {:?}",programs);
-    assert!(programs.iter().filter(|prog| if let PixelProgramPlan::LinearSourceOver(_, _) = prog { true } else { false }).count() == 2, "Incorrect number of LinearSourecOver instructions: {:?}",programs);
+    assert!(programs.iter().filter(|prog| if let PixelProgramPlan::LinearMerge(_, _) = prog { true } else { false }).count() == 2, "Incorrect number of LinearSourecOver instructions: {:?}",programs);
 }
 
 #[test]
