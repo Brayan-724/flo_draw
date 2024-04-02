@@ -44,7 +44,14 @@ pub struct BezierSubpathEvenOddEdge {
 ///
 /// Represents a closed bezier subpath
 ///
-/// To become an edge, this needs to be combined with a winding rule style and a 
+/// To become an edge, this needs to be combined with a winding rule style, a shape ID and a rendering style.
+/// This can be done with the `to_non_zero_edge()`, `to_even_odd_edge()`, `to_flattened_non_zero_edge()` and
+/// `to_flattened_even_odd_edge()` functions. 'Flattened' edges are converted to polylines to render, while
+/// non-flattened edges are rendered by solving the bezier path function on each line.
+///
+/// Non-flattened edges retain accuracy at any scaling level. They can be re-rendered faster once the polyline
+/// is calculated too (generally they are faster compared to 'bezier' edges, but it's dependent on the rendering
+/// itself)
 ///
 #[derive(Clone)]
 pub struct BezierSubpath {
