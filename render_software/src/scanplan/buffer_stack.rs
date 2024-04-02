@@ -25,8 +25,8 @@ where
     pub fn new(buffer: &'a mut [TPixel]) -> Self {
         BufferStack {
             first:          buffer,
-            stack:          vec![],
-            ready_stack:    vec![],
+            stack:          Vec::with_capacity(8),
+            ready_stack:    Vec::with_capacity(8),
         }
     }
 
@@ -47,7 +47,7 @@ where
     ///
     /// Each layer of the stack is the same length, but only the bytes in the range are relevant for the next layer
     ///
-    #[inline]
+    #[inline(never)]
     pub fn push_entry(&mut self, range: Range<usize>) {
         if let Some(mut new_entry) = self.ready_stack.pop() {
             // Copy into the new entry from the existing entry (we already know this is large enough as it was copied earlier on)
@@ -63,7 +63,7 @@ where
             self.stack.push(new_entry);
         } else {
             // Create a new buffer by copying whatever was last in the list
-            let mut new_entry = vec![];
+            let mut new_entry = Vec::with_capacity(range.len());
 
             if let Some(last) = self.stack.last() {
                 new_entry.extend_from_slice(last);
