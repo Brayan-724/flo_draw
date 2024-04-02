@@ -3,6 +3,10 @@ use flo_render_software::edges::*;
 use flo_render_software::pixel::*;
 use flo_render_software::scanplan::*;
 
+use flo_render_software::curves::geo::*;
+use flo_render_software::curves::bezier::*;
+use flo_render_software::curves::bezier::path::*;
+
 fn strip_y_coordinates(with_coordinates: Vec<(f64, ScanlinePlan)>) -> Vec<ScanlinePlan> {
     with_coordinates.into_iter()
         .map(|(_, plan)| plan)
@@ -340,7 +344,7 @@ fn thin_rectangle() {
     let mut edge_plan   = EdgePlan::new().with_shape_description(rectangle_shape, ShapeDescriptor::opaque(program_data_id)).with_edge(rectangle_edge);
     edge_plan.prepare_to_render();
 
-    let pixel_plan      = strip_y_coordinates(PixelScanPlanner::plan(&edge_plan, &ScanlineTransform::identity(), &[124.0, 125.0, 126.0], 0.0..1000.0));
+    let pixel_plan = strip_y_coordinates(PixelScanPlanner::plan(&edge_plan, &ScanlineTransform::identity(), &[124.0, 125.0, 126.0], 0.0..1000.0));
     assert!(pixel_plan.len() == 3);
 
     assert!(pixel_plan[0].iter_as_spans().count() == 0, "[0, y == 124.0] {} != 0", pixel_plan[0].iter_as_spans().count());
@@ -349,4 +353,47 @@ fn thin_rectangle() {
 
     assert!(pixel_plan[1].iter_as_spans().collect::<Vec<_>>() == vec![ScanSpan::opaque(100.1..100.2, program_data_id)], "[1, y == 125.0] {:?}", pixel_plan[1].iter_as_spans().collect::<Vec<_>>());
     assert!(pixel_plan[2].iter_as_spans().collect::<Vec<_>>() == vec![ScanSpan::opaque(100.1..100.2, program_data_id)], "[2, y == 126.0] {:?}", pixel_plan[1].iter_as_spans().collect::<Vec<_>>());
+}
+
+#[test]
+fn closed_c_shape() {
+    // The 'C' shape here is a 'square doughnut' made up of a single path, looking like this:
+    //
+    // +----+----+
+    // |    |    |
+    // |  +-+-+  |
+    // |  |   |  |
+    // |  +---+  |
+    // |         |
+    // +---------+
+    //
+    // The thing we're looking for is if the 'seam' is generated with a gap or not (it should not be)
+    let square_doughnut_id  = ShapeId::new();
+    let program_data_id     = PixelProgramDataId(0);
+    let mut square_doughnut = BezierPathBuilder::<BezierSubpath>::start(Coord2(100.0, 100.0))
+        .line_to(Coord2(100.0, 600.0))
+        .line_to(Coord2(300.5, 600.0))
+        .line_to(Coord2(300.5, 500.0))
+        .line_to(Coord2(200.0, 500.0))
+        .line_to(Coord2(200.0, 300.0))
+        .line_to(Coord2(500.0, 300.0))
+        .line_to(Coord2(500.0, 500.0))
+        .line_to(Coord2(300.5, 500.0))
+        .line_to(Coord2(300.5, 600.0))
+        .line_to(Coord2(600.0, 600.0))
+        .line_to(Coord2(600.0, 100.0))
+        .line_to(Coord2(100.0, 100.0))
+        .build()
+        .to_flattened_non_zero_edge(square_doughnut_id);
+    square_doughnut.prepare_to_render();
+
+    let mut edge_plan   = EdgePlan::new().with_shape_description(square_doughnut_id, ShapeDescriptor::opaque(program_data_id)).with_edge(square_doughnut);
+    edge_plan.prepare_to_render();
+
+    let pixel_plan = strip_y_coordinates(PixelScanPlanner::plan(&edge_plan, &ScanlineTransform::identity(), &[550.0], 0.0..1000.0));
+
+    assert!(pixel_plan.len() == 1, "{:?}", pixel_plan);
+    assert!(pixel_plan[0].iter_as_spans().count() == 2, "Should be two spans: {:?}", pixel_plan[0]);
+    assert!(pixel_plan[0].iter_as_spans().collect::<Vec<_>>() == vec![ScanSpan::opaque(100.0..300.5, program_data_id), ScanSpan::opaque(300.5..600.0, program_data_id)],
+        "Spans should match expected: {:?}", pixel_plan[0]);
 }
