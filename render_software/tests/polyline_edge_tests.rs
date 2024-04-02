@@ -15,7 +15,7 @@ fn triangle_intercepts() {
     triangle.prepare_to_render();
 
     // Get the intercepts that exactly hit the lower line
-    let mut intercepts = smallvec![];
+    let mut intercepts = vec![];
     triangle.intercepts_on_line(150.0, &mut intercepts);
 
     assert!(intercepts.len() == 2, "Should be two intercepts, found {:?}", intercepts);
@@ -36,7 +36,7 @@ fn horizontal_triangle_line() {
     triangle.prepare_to_render();
 
     // Get the intercepts that exactly hit the lower line
-    let mut intercepts = smallvec![];
+    let mut intercepts = vec![];
     triangle.intercepts_on_line(100.0, &mut intercepts);
 
     assert!(intercepts.len() == 2, "Should be two intercepts, found {:?}", intercepts);
@@ -57,7 +57,7 @@ fn horizontal_triangle_line_reversed() {
     triangle.prepare_to_render();
 
     // Get the intercepts that exactly hit the lower line
-    let mut intercepts = smallvec![];
+    let mut intercepts = vec![];
     triangle.intercepts_on_line(100.0, &mut intercepts);
 
     assert!(intercepts.len() == 2, "Should be two intercepts, found {:?}", intercepts);
@@ -78,7 +78,7 @@ fn double_horizontal_triangle_line() {
     triangle.prepare_to_render();
 
     // Get the intercepts that exactly hit the lower line
-    let mut intercepts = smallvec![];
+    let mut intercepts = vec![];
     triangle.intercepts_on_line(100.0, &mut intercepts);
 
     assert!(intercepts.len() == 2, "Should be two intercepts, found {:?}", intercepts);
@@ -100,7 +100,7 @@ fn triple_horizontal_triangle_line() {
     triangle.prepare_to_render();
 
     // Get the intercepts that exactly hit the lower line
-    let mut intercepts = smallvec![];
+    let mut intercepts = vec![];
     triangle.intercepts_on_line(100.0, &mut intercepts);
 
     assert!(intercepts.len() == 2, "Should be two intercepts, found {:?}", intercepts);
@@ -122,7 +122,7 @@ fn triple_horizontal_triangle_line_multiple() {
     triangle.prepare_to_render();
 
     // Get the intercepts that exactly hit the lower line
-    let mut intercepts = vec![smallvec![]; 3];
+    let mut intercepts = vec![vec![]; 3];
     triangle.intercepts_on_lines(&[99.0, 100.0, 101.0], &mut intercepts);
 
     assert!(intercepts[0].len() == 0, "Should be zero intercepts, found {:?}", intercepts);

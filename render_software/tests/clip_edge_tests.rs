@@ -27,7 +27,7 @@ pub fn clip_big_rectangle() {
     for y_pos in 0..400 {
         // Get the intercepts at this position
         let y_pos           = y_pos as f64;
-        let mut intercepts  = vec![smallvec![]];
+        let mut intercepts  = vec![vec![]];
         clipped_shape.intercepts(&[y_pos], &mut intercepts);
 
         if y_pos < 200.0 || y_pos >= 300.0 {
@@ -71,7 +71,7 @@ pub fn clip_inner_rectangle_1() {
     for y_pos in 0..400 {
         // Get the intercepts at this position
         let y_pos           = y_pos as f64;
-        let mut intercepts  = vec![smallvec![]];
+        let mut intercepts  = vec![vec![]];
         clipped_shape.intercepts(&[y_pos], &mut intercepts);
 
         if y_pos < 200.0 || y_pos >= 300.0 {
@@ -115,7 +115,7 @@ pub fn clip_inner_rectangle_2() {
     for y_pos in 0..400 {
         // Get the intercepts at this position
         let y_pos           = y_pos as f64;
-        let mut intercepts  = vec![smallvec![]];
+        let mut intercepts  = vec![vec![]];
         clipped_shape.intercepts(&[y_pos], &mut intercepts);
 
         if y_pos < 200.0 || y_pos >= 300.0 {
@@ -157,7 +157,7 @@ pub fn clip_inner_rectangle_3() {
     for y_pos in 0..400 {
         // Get the intercepts at this position
         let y_pos           = y_pos as f64;
-        let mut intercepts  = vec![smallvec![]];
+        let mut intercepts  = vec![vec![]];
         clipped_shape.intercepts(&[y_pos], &mut intercepts);
 
         if y_pos < 200.0 || y_pos >= 300.0 {
@@ -199,7 +199,7 @@ pub fn clip_inner_rectangle_4() {
     for y_pos in 0..400 {
         // Get the intercepts at this position
         let y_pos           = y_pos as f64;
-        let mut intercepts  = vec![smallvec![]];
+        let mut intercepts  = vec![vec![]];
         clipped_shape.intercepts(&[y_pos], &mut intercepts);
 
         if y_pos < 200.0 || y_pos >= 300.0 {

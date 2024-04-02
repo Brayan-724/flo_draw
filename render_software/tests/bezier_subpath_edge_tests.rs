@@ -806,7 +806,7 @@ pub fn triangle_lower_edge_non_zero() {
     path.prepare_to_render();
 
     // Intercepts along the very bottom of the path
-    let mut intercepts = vec![smallvec![]];
+    let mut intercepts = vec![vec![]];
     path.intercepts(&[799.9], &mut intercepts);
 
     assert!(intercepts[0].len() == 2, "Should be 2 intercepts, found {:?}", intercepts[0]);
@@ -827,7 +827,7 @@ pub fn triangle_lower_edge_flattened_non_zero() {
     path.prepare_to_render();
 
     // Intercepts along the very bottom of the path
-    let mut intercepts = vec![smallvec![]];
+    let mut intercepts = vec![vec![]];
     path.intercepts(&[799.9], &mut intercepts);
 
     assert!(intercepts[0].len() == 2, "Should be 2 intercepts, found {:?}", intercepts[0]);
@@ -848,7 +848,7 @@ pub fn triangle_lower_edge_non_zero_very_close() {
     path.prepare_to_render();
 
     // Intercepts along the very bottom of the path
-    let mut intercepts = vec![smallvec![]];
+    let mut intercepts = vec![vec![]];
     path.intercepts(&[799.9999999999999], &mut intercepts);
 
     assert!(intercepts[0].len() == 2, "Should be 2 intercepts, found {:?}", intercepts[0]);
@@ -869,7 +869,7 @@ pub fn triangle_lower_edge_flattened_non_zero_very_close() {
     path.prepare_to_render();
 
     // Intercepts along the very bottom of the path
-    let mut intercepts = vec![smallvec![]];
+    let mut intercepts = vec![vec![]];
     path.intercepts(&[799.9999999999999], &mut intercepts);
 
     assert!(intercepts[0].len() == 2, "Should be 2 intercepts, found {:?}", intercepts[0]);
@@ -913,7 +913,7 @@ pub fn triangle_lower_edge_flattened_non_zero_very_close_translated() {
     let path = path.transform(&Transform2D::translate(10.0, 0.0));
 
     // Intercepts along the very bottom of the path
-    let mut intercepts = vec![smallvec![]];
+    let mut intercepts = vec![vec![]];
     path.intercepts(&[799.9999999999999], &mut intercepts);
 
     assert!(intercepts[0].len() == 2, "Should be 2 intercepts, found {:?}", intercepts[0]);
