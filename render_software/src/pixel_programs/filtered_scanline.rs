@@ -14,15 +14,9 @@ use std::marker::{PhantomData};
 ///
 /// The full rendering is only applied to the region of the scanlines that are actually rendered on screen
 ///
-pub struct FilteredScanlineProgram<TEdgeDescriptor, TFilter, TPlanner, TPixel, const N: usize>
-where
-    TPixel: Pixel<N>,
-{
+pub struct FilteredScanlineProgram<TEdgeDescriptor, TFilter, TPlanner> {
     /// The filter to apply to the output of the scanline program
     filter: PhantomData<TFilter>,
-
-    // Pixel data
-    pixel: PhantomData<TPixel>,
 
     // Edge descriptor data
     edge: PhantomData<TEdgeDescriptor>,
@@ -54,17 +48,16 @@ where
     filter: TFilter,
 }
 
-impl<TEdgeDescriptor, TFilter, TPlanner, TPixel, const N: usize> Default for FilteredScanlineProgram<TEdgeDescriptor, TFilter, TPlanner, TPixel, N> 
+impl<TEdgeDescriptor, TFilter, TPlanner> Default for FilteredScanlineProgram<TEdgeDescriptor, TFilter, TPlanner> 
 where
-    TPixel:             'static + Pixel<N>,
-    TFilter:            Send + Sync + PixelFilter<Pixel = TPixel>,
+    TFilter::Pixel:     'static + AlphaBlend + Copy + Clone + Default,
+    TFilter:            Send + Sync + PixelFilter,
     TEdgeDescriptor:    EdgeDescriptor,
     TPlanner:           Send + Sync + Default + ScanPlanner<Edge=TEdgeDescriptor>,
 {
     fn default() -> Self {
         Self {
             filter:     PhantomData,
-            pixel:      PhantomData,
             edge:       PhantomData,
             planner:    TPlanner::default(),
         }
@@ -86,14 +79,14 @@ where
     }
 }
 
-impl<TEdgeDescriptor, TFilter, TPlanner, TPixel, const N: usize> PixelProgram for FilteredScanlineProgram<TEdgeDescriptor, TFilter, TPlanner, TPixel, N>
+impl<TEdgeDescriptor, TFilter, TPlanner> PixelProgram for FilteredScanlineProgram<TEdgeDescriptor, TFilter, TPlanner>
 where
-    TPixel:             'static + Pixel<N>,
-    TFilter:            Send + Sync + PixelFilter<Pixel = TPixel>,
+    TFilter::Pixel:     'static + AlphaBlend + Copy + Clone + Default,
+    TFilter:            Send + Sync + PixelFilter,
     TEdgeDescriptor:    EdgeDescriptor,
     TPlanner:           Send + Sync + ScanPlanner<Edge=TEdgeDescriptor>,
 {
-    type Pixel          = TPixel;
+    type Pixel          = TFilter::Pixel;
     type ProgramData    = FilteredScanlineData<TEdgeDescriptor, TFilter>;
 
     #[inline]
@@ -142,7 +135,7 @@ where
 
         // Render the scanline into its own buffer
         let region              = ScanlineRenderRegion { y_pos: scan_ypos, transform: scan_transform };
-        let mut scanline_buffer = vec![TPixel::default(); pixel_range.len()];
+        let mut scanline_buffer = vec![<TFilter as PixelFilter>::Pixel::default(); pixel_range.len()];
         data_cache.render(&region, &scanline, &mut scanline_buffer);
 
         for (src, tgt) in scanline_buffer[0..pixel_range.len()].iter().zip(target[(pixel_range.start as usize)..(pixel_range.end as usize)].iter_mut()) {
