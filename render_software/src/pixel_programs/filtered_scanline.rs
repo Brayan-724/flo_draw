@@ -97,6 +97,7 @@ where
         let scan_transform  = x_transform.transform(data.scale.0, data.translate.0);
 
         // Try to retrieve the scanline, or plan a new one if needed
+        // TODO: reset scanlines if the x-transform or the width has changed (maybe also if the render height is changed)
         let scanline = {
             let scanlines = data.scanlines.read().unwrap();
             if let Some(existing_scanline) = scanlines.get(&y_pos.to_bits()) {
@@ -126,7 +127,7 @@ where
             }
         };
 
-        // Clip the plan against the x-region
+        // Clip the plan against the x-region that's being rendered (so we don't render any more pixels than we actually need)
         let zero_point  = x_transform.pixel_x_to_source_x(0);
         let x_start     = x_transform.pixel_x_to_source_x(pixel_range.start);
         let x_end       = x_transform.pixel_x_to_source_x(pixel_range.end);
