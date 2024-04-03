@@ -1,4 +1,5 @@
 use crate::edgeplan::*;
+use crate::filters::*;
 use crate::pixel::*;
 use crate::pixel_programs::*;
 use crate::scanplan::*;
@@ -7,6 +8,7 @@ use std::sync::*;
 
 type SimpleSpriteProgram<TPixel> = BasicSpriteProgram<TPixel, Arc<dyn EdgeDescriptor>, ShardScanPlanner<Arc<dyn EdgeDescriptor>>>;
 type AffineSpriteProgram<TPixel> = TransformedSpriteProgram<TPixel, Arc<dyn EdgeDescriptor>, ShardScanPlanner<Arc<dyn EdgeDescriptor>>>;
+type FilteredSpriteProgram<TPixel> = FilteredScanlineProgram<Arc<dyn EdgeDescriptor>, Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>, ShardScanPlanner<Arc<dyn EdgeDescriptor>>>;
 
 ///
 /// The standard set of pixel programs for a canvas drawing
@@ -44,6 +46,9 @@ where
 
     /// The transformed sprite program (can apply an affine transform to the sprite data before rendering)
     pub (super) transformed_sprite: StoredPixelProgramFromFrameProgram<AffineSpriteProgram<TPixel>>,
+
+    /// The filtered sprite program
+    pub (super) filtered_sprite: StoredPixelProgramFromProgram<FilteredSpriteProgram<TPixel>>,
 }
 
 impl<TPixel, const N: usize> Default for CanvasPixelPrograms<TPixel, N> 
@@ -61,6 +66,7 @@ where
         let linear_gradient         = cache.add_pixel_program(LinearGradientProgram::default());
         let basic_sprite            = cache.add_pixel_program::<SimpleSpriteProgram<TPixel>>(BasicSpriteProgram::default());
         let transformed_sprite      = cache.add_frame_pixel_program::<AffineSpriteProgram<TPixel>>(TransformedSpriteProgram::default());
+        let filtered_sprite         = cache.add_pixel_program(FilteredSpriteProgram::default());
 
         CanvasPixelPrograms { 
             program_cache:          cache, 
@@ -73,6 +79,7 @@ where
             linear_gradient:        linear_gradient,
             basic_sprite:           basic_sprite,
             transformed_sprite:     transformed_sprite,
+            filtered_sprite:        filtered_sprite,
         }
     }
 }

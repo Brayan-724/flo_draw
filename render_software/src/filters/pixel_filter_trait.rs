@@ -1,3 +1,5 @@
+use std::sync::*;
+
 ///
 /// A pixel filter implements a filter algorithm that can be applied to pixels one line at a time
 ///
@@ -29,4 +31,26 @@ pub trait PixelFilter {
     /// the default '0' value.
     ///
     fn filter_line(&self, y_pos: usize, input_lines: &[&[Self::Pixel]], output_line: &mut [Self::Pixel]);
+}
+
+impl<TPixel> PixelFilter for Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>
+where
+    TPixel: Send,
+{
+    type Pixel = TPixel;
+
+    #[inline]
+    fn input_lines(&self) -> (usize, usize) {
+        (**self).input_lines()
+    }
+
+    #[inline]
+    fn extra_columns(&self) -> (usize, usize) {
+        (**self).extra_columns()
+    }
+
+    #[inline]
+    fn filter_line(&self, y_pos: usize, input_lines: &[&[Self::Pixel]], output_line: &mut [Self::Pixel]) {
+        (**self).filter_line(y_pos, input_lines, output_line)
+    }
 }
