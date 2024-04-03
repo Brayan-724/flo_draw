@@ -81,10 +81,9 @@ where
 
         // Render the scanplan to the pixels using a scanline renderer (which should appropriately blend transparent pixels)
         let scanplan = &scanline[0].1;
-        let renderer = ScanlineRenderer::new(data_cache);
         let region   = ScanlineRenderRegion { y_pos: sprite_ypos, transform: sprite_transform };
 
-        renderer.render(&region, scanplan, target);
+        data_cache.render(&region, scanplan, target);
     }
 }
 

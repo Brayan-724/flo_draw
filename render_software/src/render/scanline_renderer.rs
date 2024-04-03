@@ -4,6 +4,8 @@ use crate::pixel::*;
 use crate::scanplan::*;
 use crate::scanplan::buffer_stack::*;
 
+use std::ops::{Range};
+
 ///
 /// Specifies the y-pos and x transformation to use with a scanline renderer
 ///
@@ -24,7 +26,7 @@ where
     TProgramRunner:         PixelProgramRunner,
     TProgramRunner::TPixel: 'static + Send + Copy + AlphaBlend,
 {
-    program_data:   TProgramRunner,
+    program_data: TProgramRunner,
 }
 
 impl<TProgramRunner> ScanlineRenderer<TProgramRunner>
@@ -38,7 +40,7 @@ where
     #[inline]
     pub fn new(data_cache: TProgramRunner) -> Self {
         ScanlineRenderer {
-            program_data:   data_cache,
+            program_data: data_cache,
         }
     }
 }
@@ -228,6 +230,37 @@ where
                 }
             }
         }
+    }
+}
+
+impl<'a, TPixel> Renderer for PixelProgramRenderCache<'a, TPixel>
+where
+    TPixel: 'static + Send + Copy + AlphaBlend,
+{
+    type Region = ScanlineRenderRegion;
+    type Source = ScanlinePlan;
+    type Dest   = [TPixel];
+
+    #[inline]
+    fn render(&self, region: &Self::Region, source: &Self::Source, dest: &mut Self::Dest) {
+        let renderer = ScanlineRenderer::new(self);
+        renderer.render(region, source, dest);
+    }
+}
+
+impl<TFn, TPixel> Renderer for BasicPixelProgramRunner<TFn, TPixel>
+where
+    TFn:    Send + Sync + Fn(PixelProgramDataId, &mut [TPixel], Range<i32>, &ScanlineTransform, f64),
+    TPixel: 'static + Send + Copy + AlphaBlend,
+{
+    type Region = ScanlineRenderRegion;
+    type Source = ScanlinePlan;
+    type Dest   = [TPixel];
+
+    #[inline]
+    fn render(&self, region: &Self::Region, source: &Self::Source, dest: &mut Self::Dest) {
+        let renderer = ScanlineRenderer::new(self);
+        renderer.render(region, source, dest);
     }
 }
 
