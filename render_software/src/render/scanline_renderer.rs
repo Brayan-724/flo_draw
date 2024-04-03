@@ -286,7 +286,7 @@ mod test {
         let plan    = ScanlinePlan::from_ordered_stacks(vec![
                 ScanSpanStack::with_reversed_programs(0.0..10.0, false, &vec![PixelProgramPlan::LinearSourceOver(0.0, 1.0), PixelProgramPlan::Run(PixelProgramDataId(0)), PixelProgramPlan::StartBlend])
             ]);
-        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity() };
+        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity(1920) };
 
         renderer.render(&region, &plan, &mut target);
 
@@ -309,7 +309,7 @@ mod test {
         let plan    = ScanlinePlan::from_ordered_stacks(vec![
                 ScanSpanStack::with_reversed_programs(0.0..1.0, false, &vec![PixelProgramPlan::LinearSourceOver(0.0, 1.0), PixelProgramPlan::Run(PixelProgramDataId(0)), PixelProgramPlan::StartBlend])
             ]);
-        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity() };
+        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity(1920) };
 
         renderer.render(&region, &plan, &mut target);
 
@@ -332,7 +332,7 @@ mod test {
         let plan    = ScanlinePlan::from_ordered_stacks(vec![
                 ScanSpanStack::with_reversed_programs(0.0..10.0, false, &vec![PixelProgramPlan::LinearSourceOver(0.5, 1.0), PixelProgramPlan::Run(PixelProgramDataId(0)), PixelProgramPlan::StartBlend])
             ]);
-        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity() };
+        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity(1920) };
 
         renderer.render(&region, &plan, &mut target);
 
@@ -355,7 +355,7 @@ mod test {
         let plan    = ScanlinePlan::from_ordered_stacks(vec![
                 ScanSpanStack::with_reversed_programs(0.0..10.0, false, &vec![PixelProgramPlan::LinearSourceOver(0.0, 1.0), PixelProgramPlan::Run(PixelProgramDataId(0)), PixelProgramPlan::StartBlend])
             ]);
-        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity() };
+        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity(1920) };
 
         renderer.render(&region, &plan, &mut target);
 
@@ -378,7 +378,7 @@ mod test {
         let plan    = ScanlinePlan::from_ordered_stacks(vec![
                 ScanSpanStack::with_reversed_programs(0.0..10.0, false, &vec![PixelProgramPlan::LinearSourceOver(0.0, 0.5), PixelProgramPlan::Run(PixelProgramDataId(0)), PixelProgramPlan::StartBlend])
             ]);
-        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity() };
+        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity(1920) };
 
         renderer.render(&region, &plan, &mut target);
 
@@ -401,7 +401,7 @@ mod test {
         let plan    = ScanlinePlan::from_ordered_stacks(vec![
                 ScanSpanStack::with_reversed_programs(0.0..10.0, false, &vec![PixelProgramPlan::LinearSourceOver(0.5, 1.0), PixelProgramPlan::Run(PixelProgramDataId(0)), PixelProgramPlan::StartBlend])
             ]);
-        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity() };
+        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity(1920) };
 
         renderer.render(&region, &plan, &mut target);
 
@@ -447,7 +447,7 @@ mod test {
                 ScanSpanStack::with_reversed_programs(6.0..10.0, false, &vec![
                     PixelProgramPlan::Run(PixelProgramDataId(0))]),
             ]);
-        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity() };
+        let region  = ScanlineRenderRegion { y_pos: 0.0, transform: ScanlineTransform::identity(1920) };
 
         renderer.render(&region, &plan, &mut target);
 

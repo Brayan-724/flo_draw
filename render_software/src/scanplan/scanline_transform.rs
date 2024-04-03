@@ -13,6 +13,9 @@ pub struct ScanlineTransform {
 
     /// The reciprocal of the scale
     scale_recip: f64,
+
+    /// The width of a scanline in pixels
+    width_pixels: usize,
 }
 
 impl ScanlineTransform {
@@ -20,11 +23,12 @@ impl ScanlineTransform {
     /// Creates an identity transform (where pixel coordinates map directly on to the edge plan)
     ///
     #[inline]
-    pub fn identity() -> Self {
+    pub fn identity(width_pixels: usize) -> Self {
         ScanlineTransform { 
             offset:         0.0, 
             scale:          1.0, 
-            scale_recip:    1.0
+            scale_recip:    1.0,
+            width_pixels:   width_pixels,
         }
     }
 
@@ -37,6 +41,7 @@ impl ScanlineTransform {
             offset:         -source_x_range.start,
             scale:          (pixel_width as f64) / (source_x_range.end-source_x_range.start),
             scale_recip:    (source_x_range.end-source_x_range.start) / (pixel_width as f64),
+            width_pixels:   pixel_width
         }
     }
 
@@ -49,6 +54,7 @@ impl ScanlineTransform {
             offset:         (self.offset*scale_x) - translate_x, 
             scale:          self.scale / scale_x, 
             scale_recip:    self.scale_recip * scale_x,
+            width_pixels:   self.width_pixels,
         }
     }
 

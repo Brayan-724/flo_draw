@@ -56,7 +56,7 @@ where
         let y_positions = &region.y_positions;
         let width       = region.width as f64;
         let edge_plan   = source;
-        let transform   = ScanlineTransform::identity();
+        let transform   = ScanlineTransform::identity(region.width);
 
         // Split the dest into chunks (lines)
         let mut lines = dest.chunks_exact_mut(region.width);
