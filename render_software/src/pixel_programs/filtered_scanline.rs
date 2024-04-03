@@ -1,6 +1,7 @@
 use crate::edgeplan::*;
 use crate::filters::*;
 use crate::pixel::*;
+use crate::render::*;
 use crate::scanplan::*;
 
 use std::collections::{HashMap};
@@ -53,9 +54,41 @@ where
     filter: TFilter,
 }
 
+impl<TEdgeDescriptor, TFilter, TPlanner, TPixel, const N: usize> Default for FilteredScanlineProgram<TEdgeDescriptor, TFilter, TPlanner, TPixel, N> 
+where
+    TPixel:             'static + Pixel<N>,
+    TFilter:            Send + Sync + PixelFilter<Pixel = TPixel>,
+    TEdgeDescriptor:    EdgeDescriptor,
+    TPlanner:           Send + Sync + Default + ScanPlanner<Edge=TEdgeDescriptor>,
+{
+    fn default() -> Self {
+        Self {
+            filter:     PhantomData,
+            pixel:      PhantomData,
+            edge:       PhantomData,
+            planner:    TPlanner::default(),
+        }
+    }
+}
+
+impl<TEdgeDescriptor, TFilter> FilteredScanlineData<TEdgeDescriptor, TFilter>
+where
+    TEdgeDescriptor:    EdgeDescriptor,
+    TFilter:            Send + Sync + PixelFilter,
+{
+    ///
+    /// Creates a new instance of the data for the basic sprite pixel program
+    ///
+    pub fn new(edges: Arc<EdgePlan<TEdgeDescriptor>>, scale: (f64, f64), translate: (f64, f64), filter: TFilter) -> Self {
+        let scanlines = RwLock::new(HashMap::new());
+
+        FilteredScanlineData { edges, scale, translate, scanlines, filter }
+    }
+}
+
 impl<TEdgeDescriptor, TFilter, TPlanner, TPixel, const N: usize> PixelProgram for FilteredScanlineProgram<TEdgeDescriptor, TFilter, TPlanner, TPixel, N>
 where
-    TPixel:             Pixel<N>,
+    TPixel:             'static + Pixel<N>,
     TFilter:            Send + Sync + PixelFilter<Pixel = TPixel>,
     TEdgeDescriptor:    EdgeDescriptor,
     TPlanner:           Send + Sync + ScanPlanner<Edge=TEdgeDescriptor>,
@@ -66,6 +99,9 @@ where
     #[inline]
     fn draw_pixels(&self, data_cache: &PixelProgramRenderCache<Self::Pixel>, target: &mut [Self::Pixel], pixel_range: Range<i32>, x_transform: &ScanlineTransform, y_pos: f64, data: &Self::ProgramData) {
         use std::mem;
+
+        let scan_ypos       = y_pos * data.scale.1 + data.translate.1;
+        let scan_transform  = x_transform.transform(data.scale.0, data.translate.0);
 
         // Try to retrieve the scanline, or plan a new one if needed
         let scanline = {
@@ -78,9 +114,7 @@ where
                 mem::drop(scanlines);
 
                 // Calculate the transform for the sprite region
-                let scan_ypos       = y_pos * data.scale.1 + data.translate.1;
-                let scan_transform  = x_transform.transform(data.scale.0, data.translate.0);
-                let scan_xrange     = scan_transform.pixel_x_to_source_x(0)..scan_transform.pixel_x_to_source_x(x_transform.width_in_pixels() as _);
+                let scan_xrange = scan_transform.pixel_x_to_source_x(0)..scan_transform.pixel_x_to_source_x(x_transform.width_in_pixels() as _);
 
                 // Plan the rendering for the sprite
                 let mut new_scanline = [(scan_ypos, ScanlinePlan::default())];
@@ -99,6 +133,20 @@ where
             }
         };
 
-        // todo
+        // Clip the plan against the x-region
+        let zero_point  = x_transform.pixel_x_to_source_x(0);
+        let x_start     = x_transform.pixel_x_to_source_x(pixel_range.start);
+        let x_end       = x_transform.pixel_x_to_source_x(pixel_range.end);
+        let x_range     = x_start..x_end;
+        let scanline    = scanline.clip(x_range, x_start - zero_point);
+
+        // Render the scanline into its own buffer
+        let region              = ScanlineRenderRegion { y_pos: scan_ypos, transform: scan_transform };
+        let mut scanline_buffer = vec![TPixel::default(); pixel_range.len()];
+        data_cache.render(&region, &scanline, &mut scanline_buffer);
+
+        for (src, tgt) in scanline_buffer[0..pixel_range.len()].iter().zip(target[(pixel_range.start as usize)..(pixel_range.end as usize)].iter_mut()) {
+            *tgt = *src;
+        }
     }
 }
