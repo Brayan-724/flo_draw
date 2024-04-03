@@ -181,7 +181,7 @@ where
                 ClearSprite                                         => { self.clear_layer(self.current_layer); },
                 SpriteTransform(transform)                          => { self.current_state.sprite_transform(transform); },
                 DrawSprite(sprite_id)                               => { self.sprite_draw(sprite_id); },
-                DrawSpriteWithFilters(sprite_id, filters)           => { /* todo!() */ },
+                DrawSpriteWithFilters(sprite_id, filters)           => { self.sprite_draw_with_filters(sprite_id, filters); },
 
                 Texture(texture_id, texture_op)                     => { self.texture(texture_id, texture_op); },
                 Gradient(gradient_id, gradient_op)                  => { self.gradient(gradient_id, gradient_op); },

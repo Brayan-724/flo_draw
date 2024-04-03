@@ -5,6 +5,7 @@ use super::prepared_layer::*;
 
 use crate::edgeplan::*;
 use crate::edges::*;
+use crate::filters::*;
 use crate::pixel::*;
 use crate::pixel_programs::*;
 
@@ -125,6 +126,106 @@ where
                 bounds:             ((0.0, 0.0), (0.0, 0.0)),
                 transform:          canvas::Transform2D::identity(),
                 inverse_transform:  canvas::Transform2D::identity(),
+            }
+        }
+    }
+
+    ///
+    /// Draws the sprite with the specified ID
+    ///
+    pub (crate) fn sprite_draw_with_filters(&mut self, sprite_id: canvas::SpriteId, filters: Vec<canvas::TextureFilter>) {
+        if filters.is_empty() {
+            // If there are no filters, then just fall back to the normal sprite draw routine
+            self.sprite_draw(sprite_id);
+        } else {
+            // Otherwise, draw using the filter program
+            // TODO: this is very similar to sprite_draw, we shold consolidate these two methods somehow
+            use std::iter;
+
+            const VERY_CLOSE: f32 = 1e-12;
+
+            // Get the layer handle for this sprite
+            if let Some(sprite_layer_handle) = self.sprites.get(&(self.current_namespace, sprite_id)) {
+                // Prepare the sprite layer for rendering
+                let sprite_layer = self.prepare_sprite_layer(*sprite_layer_handle);
+
+                if !sprite_layer.edges.is_empty() {
+                    // Figure out where the sprite should be rendered on the canvas
+                    let ((min_x, min_y), (max_x, max_y)) = sprite_layer.bounds;
+
+                    // Coordinates in terms of render coordinates for the sprite
+                    let lower_left  = (min_x as f32, min_y as f32);
+                    let lower_right = (max_x as f32, min_y as f32);
+                    let upper_left  = (min_x as f32, max_y as f32);
+                    let upper_right = (max_x as f32, max_y as f32);
+
+                    // Change to 'origin' coordinates using the inverse transform in the sprite
+                    let inverse_transform = sprite_layer.inverse_transform;
+                    let lower_left  = inverse_transform.transform_point(lower_left.0, lower_left.1);
+                    let lower_right = inverse_transform.transform_point(lower_right.0, lower_right.1);
+                    let upper_left  = inverse_transform.transform_point(upper_left.0, upper_left.1);
+                    let upper_right = inverse_transform.transform_point(upper_right.0, upper_right.1);
+
+                    // Map back on to the canvas using the sprite transform (generates render coordinates again)
+                    let canvas_transform = self.current_state.transform * self.current_state.sprite_transform.matrix();
+                    let lower_left  = canvas_transform.transform_point(lower_left.0, lower_left.1);
+                    let lower_right = canvas_transform.transform_point(lower_right.0, lower_right.1);
+                    let upper_left  = canvas_transform.transform_point(upper_left.0, upper_left.1);
+                    let upper_right = canvas_transform.transform_point(upper_right.0, upper_right.1);
+
+                    // Get the z-index of where to render this sprite
+                    let current_layer   = self.layers.get_mut(self.current_layer.0).unwrap();
+                    let z_index         = current_layer.z_index;
+
+                    // TODO: actually pick a proper filter here
+                    let filter: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>> = Arc::new(HorizontalKernelFilter::with_gaussian_blur_radius(16.0 as _));
+
+                    // Future stuff renders on top of the sprite
+                    current_layer.z_index += 1;
+
+                    if (lower_left.1-lower_right.1).abs() < VERY_CLOSE && (upper_left.1-upper_right.1).abs() < VERY_CLOSE {
+                        let scale_x     = (max_x - min_x) / (lower_right.0 - lower_left.0) as f64;
+                        let scale_y     = (max_y - min_y) / (upper_left.1 - lower_left.1) as f64;
+                        
+                        let translate   = (min_x - (lower_left.0 as f64 * scale_x), min_y - (lower_left.1 as f64 * scale_y));
+                        let scale       = (scale_x, scale_y);
+
+                        // Create the brush data
+                        let data    = FilteredScanlineData::new(sprite_layer.edges, scale, translate, filter);
+                        let data_id = self.program_cache.program_cache.store_program_data(&self.program_cache.filtered_sprite, &mut self.program_data_cache, data);
+
+                        // Shape is a transparent rectangle that runs this program
+                        let shape_descriptor = ShapeDescriptor {
+                            programs:   smallvec![data_id],
+                            is_opaque:  false,
+                            z_index:    z_index,
+                        };
+                        let shape_id = ShapeId::new();
+
+                        // Create a rectangle edge for this data
+                        let sprite_edge = RectangleEdge::new(shape_id, (lower_left.0 as f64)..(lower_right.0 as f64), (lower_left.1 as f64)..(upper_left.1 as f64));
+                        let sprite_edge: Arc<dyn EdgeDescriptor> = Arc::new(sprite_edge);
+
+                        // Store in the current layer
+                        current_layer.edges.add_shape(shape_id, shape_descriptor, iter::once(sprite_edge));
+                        current_layer.used_data.push(data_id);
+                    } else {
+                        // Transform from the coordinates used in the final sprite back to render coordinates
+                        let transform           = sprite_layer.inverse_transform * self.current_state.transform;
+
+                        // Map the sprite transform to render coordinates
+                        let sprite_transform    = self.current_state.transform * self.current_state.sprite_transform.matrix() * self.current_state.transform.invert().unwrap();
+
+                        // Perform a final transform to generate the transformation from sprite render coordinates to canvas render coordinates
+                        let transform           = transform * sprite_transform;
+
+                        // Use the transformed sprite program
+                        todo!();
+                    }
+
+                    // This 'unprepares' the current layer as for any other drawing operation
+                    self.prepared_layers.remove(self.current_layer.0);
+                }
             }
         }
     }
