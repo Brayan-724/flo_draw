@@ -21,7 +21,6 @@ pub fn main() {
     // Create a canvas drawing and draw the mascot to it
     let mut canvas_drawing = CanvasDrawing::<F32LinearPixel, 4>::empty();
     canvas_drawing.draw(vec![Draw::ClearCanvas(Color::Rgba(0.2, 0.8, 0.4, 0.7))]);
-    //canvas_drawing.draw(vec![Draw::ClearCanvas(Color::Rgba(0.2*0.7, 0.8*0.7, 0.4*0.7, 1.0))]);
     canvas_drawing.draw(transform_setup.iter().cloned());
 
     // Set up the sprite
