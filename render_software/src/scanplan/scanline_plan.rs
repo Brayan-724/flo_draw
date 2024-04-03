@@ -547,4 +547,34 @@ impl ScanlinePlan {
                 iter::once(first).chain(others)
             })
     }
+
+    ///
+    /// Clips this scanline plan to the specified range, such that x=new_zero_point on the original range is x=0 on the result
+    ///
+    #[inline]
+    pub fn clip(&self, source_x_range: Range<f64>, new_zero_point: f64) -> ScanlinePlan {
+        let mut new_spans = Vec::with_capacity(self.spans.len());
+
+        // Create the new spans by clipping the old spans
+        for span in self.spans.iter() {
+            // Skip spans that are entirely of the new range
+            if span.x_range.start >= source_x_range.end { break; }
+            if span.x_range.end <= source_x_range.start { continue; }
+
+            // Clip the range to the new source range
+            let new_span_start  = (span.x_range.start.max(source_x_range.start)) - new_zero_point;
+            let new_span_end    = (span.x_range.end.min(source_x_range.end)) - new_zero_point;
+
+            // Clone the old span into the new range
+            new_spans.push(ScanSpanStack {
+                x_range:    new_span_start..new_span_end,
+                plan:       span.plan.clone(),
+                opaque:     span.opaque,
+            })
+        }
+
+        ScanlinePlan {
+            spans: new_spans,
+        }
+    }
 }
