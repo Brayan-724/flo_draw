@@ -39,7 +39,7 @@ pub fn main() {
     draw_sprite.sprite_transform(SpriteTransform::Translate(-300.0, 0.0));
     draw_sprite.draw_sprite(SpriteId(0));
     draw_sprite.sprite_transform(SpriteTransform::Translate(600.0, 0.0));
-    draw_sprite.draw_sprite(SpriteId(0));
+    draw_sprite.draw_sprite_with_filters(SpriteId(0), vec![TextureFilter::GaussianBlur(16.0)]);
 
     canvas_drawing.draw(draw_sprite.iter().cloned());
 
