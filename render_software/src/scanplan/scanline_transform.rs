@@ -91,6 +91,14 @@ impl ScanlineTransform {
     }
 
     ///
+    /// The width of the scanline in pixels
+    ///
+    #[inline]
+    pub fn width_in_pixels(&self) -> usize {
+        self.width_pixels
+    }
+
+    ///
     /// Returns the pixel boundary in source coordinates that is above or at the supplied source x position
     ///
     #[inline]
