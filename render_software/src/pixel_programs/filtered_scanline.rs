@@ -143,7 +143,13 @@ where
         let mut scanline_buffer = vec![<TFilter as PixelFilter>::Pixel::default(); pixel_range.len() + (before_x + after_x)];
         data_cache.render(&region, &scanline, &mut scanline_buffer);
 
-        for (src, tgt) in scanline_buffer[0..pixel_range.len()].iter().zip(target[(pixel_range.start as usize)..(pixel_range.end as usize)].iter_mut()) {
+        // Apply the filter to generate the final result
+        let mut filter_result   = vec![<TFilter as PixelFilter>::Pixel::default(); pixel_range.len()];
+        let filter_ypos         = x_transform.source_x_to_pixels(y_pos);        // TODO: translation offset
+
+        data.filter.filter_line(filter_ypos as usize, &[&scanline_buffer], &mut filter_result);
+
+        for (src, tgt) in filter_result[0..pixel_range.len()].iter().zip(target[(pixel_range.start as usize)..(pixel_range.end as usize)].iter_mut()) {
             *tgt = src.source_over(*tgt);
         }
     }
