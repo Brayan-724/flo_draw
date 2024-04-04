@@ -145,7 +145,7 @@ where
 
         // Apply the filter to generate the final result
         let mut filter_result   = vec![<TFilter as PixelFilter>::Pixel::default(); pixel_range.len()];
-        let filter_ypos         = x_transform.source_x_to_pixels(y_pos);        // TODO: translation offset
+        let filter_ypos         = scan_transform.source_x_to_pixels(scan_ypos) - scan_transform.source_x_to_pixels(-1.0);
 
         data.filter.filter_line(filter_ypos as usize, &[&scanline_buffer], &mut filter_result);
 
