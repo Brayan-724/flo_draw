@@ -128,11 +128,10 @@ where
         };
 
         // Clip the plan against the x-region that's being rendered (so we don't render any more pixels than we actually need)
-        let zero_point  = x_transform.pixel_x_to_source_x(0);
-        let x_start     = x_transform.pixel_x_to_source_x(pixel_range.start);
-        let x_end       = x_transform.pixel_x_to_source_x(pixel_range.end);
+        let x_start     = pixel_range.start as f64;
+        let x_end       = pixel_range.end as f64;
         let x_range     = x_start..x_end;
-        let scanline    = scanline.clip(x_range, x_start - zero_point);
+        let scanline    = scanline.clip(x_range, x_start);
 
         // Render the scanline into its own buffer
         let region              = ScanlineRenderRegion { y_pos: scan_ypos, transform: scan_transform };
@@ -140,7 +139,7 @@ where
         data_cache.render(&region, &scanline, &mut scanline_buffer);
 
         for (src, tgt) in scanline_buffer[0..pixel_range.len()].iter().zip(target[(pixel_range.start as usize)..(pixel_range.end as usize)].iter_mut()) {
-            *tgt = *src;
+            *tgt = src.source_over(*tgt);
         }
     }
 }
