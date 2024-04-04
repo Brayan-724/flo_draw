@@ -93,6 +93,11 @@ where
     fn draw_pixels(&self, data_cache: &PixelProgramRenderCache<Self::Pixel>, target: &mut [Self::Pixel], pixel_range: Range<i32>, x_transform: &ScanlineTransform, y_pos: f64, data: &Self::ProgramData) {
         use std::mem;
 
+        // Fetch the 'buffer' area of extra pixels to render for the filter
+        let (before_x, after_x) = data.filter.extra_columns();
+        let (before_y, after_y) = data.filter.input_lines();        // TODO - need to fetch the extra lines needed by the filter
+
+        // Use the scale and translation factors to get the transform for the edges
         let scan_ypos       = y_pos * data.scale.1 + data.translate.1;
         let scan_transform  = x_transform.transform(data.scale.0, data.translate.0);
 
@@ -108,7 +113,7 @@ where
                 mem::drop(scanlines);
 
                 // Calculate the transform for the sprite region
-                let scan_xrange = scan_transform.pixel_x_to_source_x(0)..scan_transform.pixel_x_to_source_x(x_transform.width_in_pixels() as _);
+                let scan_xrange = scan_transform.pixel_x_to_source_x(-(before_x as i32))..scan_transform.pixel_x_to_source_x(x_transform.width_in_pixels() as i32 + after_x as i32);
 
                 // Plan the rendering for the sprite
                 let mut new_scanline = [(scan_ypos, ScanlinePlan::default())];
@@ -128,14 +133,14 @@ where
         };
 
         // Clip the plan against the x-region that's being rendered (so we don't render any more pixels than we actually need)
-        let x_start     = pixel_range.start as f64;
-        let x_end       = pixel_range.end as f64;
+        let x_start     = pixel_range.start as f64 - before_x as f64;
+        let x_end       = pixel_range.end as f64 + after_x as f64;
         let x_range     = x_start..x_end;
         let scanline    = scanline.clip(x_range, x_start);
 
         // Render the scanline into its own buffer
         let region              = ScanlineRenderRegion { y_pos: scan_ypos, transform: scan_transform };
-        let mut scanline_buffer = vec![<TFilter as PixelFilter>::Pixel::default(); pixel_range.len()];
+        let mut scanline_buffer = vec![<TFilter as PixelFilter>::Pixel::default(); pixel_range.len() + (before_x + after_x)];
         data_cache.render(&region, &scanline, &mut scanline_buffer);
 
         for (src, tgt) in scanline_buffer[0..pixel_range.len()].iter().zip(target[(pixel_range.start as usize)..(pixel_range.end as usize)].iter_mut()) {
