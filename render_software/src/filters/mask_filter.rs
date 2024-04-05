@@ -69,13 +69,18 @@ where
 
 impl<TPixel, const N: usize> PixelFilter for MaskFilter<TPixel, N> 
 where
-    TPixel: Pixel<N>,
+    TPixel: 'static + Pixel<N>,
 {
     type Pixel = TPixel;
 
     #[inline]
-    fn with_scale(&self, _x_scale: f64, _y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
-        None
+    fn with_scale(&self, x_scale: f64, y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
+        Some(Arc::new(MaskFilter {
+            mask:   Arc::clone(&self.mask),
+            mult_x: self.mult_x / x_scale,
+            mult_y: self.mult_y / y_scale,
+            pixel:  PhantomData,
+        }))
     }
 
     #[inline]
