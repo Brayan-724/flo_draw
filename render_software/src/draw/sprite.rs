@@ -2,6 +2,7 @@ use super::canvas_drawing::*;
 use super::drawing_state::*;
 use super::layer::*;
 use super::prepared_layer::*;
+use super::texture::*;
 
 use crate::edgeplan::*;
 use crate::edges::*;
@@ -131,6 +132,125 @@ where
     }
 
     ///
+    /// Returns the filters to add to a combined filter for drawing a sprite
+    ///
+    pub fn sprite_filter(&mut self, filter: canvas::TextureFilter, width: f64, height: f64) -> Vec<Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>> {
+        use canvas::TextureFilter::*;
+
+        // TODO: for gaussian blur we can apply both filters at the same time (which is more efficient, but a bit more complicated to implement)
+        let filters = match filter {
+            GaussianBlur(radius) => {
+                let vertical: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>    = Arc::new(VerticalKernelFilter::with_gaussian_blur_radius(radius as _));
+                let horizontal: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>  = Arc::new(HorizontalKernelFilter::with_gaussian_blur_radius(radius as _));
+
+                vec![vertical, horizontal]
+            }
+
+            AlphaBlend(alpha) => {
+                let filter: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>> = Arc::new(AlphaBlendFilter::with_alpha(alpha as _));
+                vec![filter]
+            },
+
+            Mask(mask_texture_id) => {
+                let filter: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>> = Arc::new(self.sprite_mask_filter(mask_texture_id, width, height));
+
+                vec![filter]
+            },
+
+            DisplacementMap(displacement_texture, x_offset, y_offset) => { 
+                let filter: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>> = Arc::new(self.sprite_displacement_filter(displacement_texture, x_offset as _, y_offset as _, width, height));
+                vec![filter]
+            },
+        };
+
+        filters
+    }
+
+    ///
+    /// Creates a mask filter from a texture
+    ///
+    fn sprite_mask_filter(&mut self, mask_texture_id: canvas::TextureId, width: f64, height: f64) -> MaskFilter<TPixel, N> {
+        // Fetch the size of the target texture
+        let (texture_width, texture_height) = (width, height);
+
+        // Read the mask texture (we use a 1x1 empty texture if the texture is missing)
+        let mask_texture = loop {
+            let texture = self.textures.get(&(self.current_namespace, mask_texture_id));
+            let texture = if let Some(texture) = texture { texture } else { break Arc::new(U16LinearTexture::from_pixels(1, 1, vec![0, 0, 0, 0])); };
+
+            match &texture.pixels {
+                TexturePixels::Empty(_, _) => {
+                    break Arc::new(U16LinearTexture::from_pixels(1, 1, vec![0, 0, 0, 0]))
+                }
+
+                TexturePixels::Rgba(_) | TexturePixels::Linear(_) => {
+                    // Convert to a mip-map so we can read as a U16 texture
+                    self.textures.get_mut(&(self.current_namespace, mask_texture_id))
+                        .unwrap().make_mip_map(self.gamma);                    
+                }
+
+                TexturePixels::MipMap(texture) | TexturePixels::MipMapWithOriginal(_, texture) => {
+                    break Arc::clone(texture.mip_level(0));
+                }
+
+                TexturePixels::DynamicSprite(dynamic) => {
+                    let dynamic = Arc::clone(dynamic);
+                    break dynamic.lock().unwrap().get_u16_texture(self);
+                }
+            }
+        };
+
+
+        let (mask_width, mask_height) = (mask_texture.width(), mask_texture.height());
+        let mult_x = mask_width as f64 / texture_width as f64;
+        let mult_y = mask_height as f64 / texture_height as f64;
+
+        MaskFilter::with_mask(&mask_texture, mult_x, mult_y)
+    }
+
+    ///
+    /// Creates a displacement filter from a texture
+    ///
+    fn sprite_displacement_filter(&mut self, displacement_texture_id: canvas::TextureId, x_offset: f64, y_offset: f64, width: f64, height: f64) -> DisplacementMapFilter<TPixel, N> {
+        // Fetch the size of the target texture
+        let (texture_width, texture_height) = (width, height);
+
+        // Read the displacement map texture (we use a 1x1 empty texture if the texture is missing)
+        let displacement_texture = loop {
+            let texture = self.textures.get(&(self.current_namespace, displacement_texture_id));
+            let texture = if let Some(texture) = texture { texture } else { break Arc::new(U16LinearTexture::from_pixels(1, 1, vec![0, 0, 0, 0])); };
+
+            match &texture.pixels {
+                TexturePixels::Empty(_, _) => {
+                    break Arc::new(U16LinearTexture::from_pixels(1, 1, vec![0, 0, 0, 0]))
+                }
+
+                TexturePixels::Rgba(_) | TexturePixels::Linear(_) => {
+                    // Convert to a mip-map so we can read as a U16 texture
+                    self.textures.get_mut(&(self.current_namespace, displacement_texture_id))
+                        .unwrap().make_mip_map(self.gamma);                    
+                }
+
+                TexturePixels::MipMap(texture) | TexturePixels::MipMapWithOriginal(_, texture) => {
+                    break Arc::clone(texture.mip_level(0));
+                }
+
+                TexturePixels::DynamicSprite(dynamic) => {
+                    let dynamic = Arc::clone(dynamic);
+                    break dynamic.lock().unwrap().get_u16_texture(self);
+                }
+            }
+        };
+
+        let (displ_width, displ_height) = (displacement_texture.width(), displacement_texture.height());
+        let mult_x = displ_width as f64 / texture_width as f64;
+        let mult_y = displ_height as f64 / texture_height as f64;
+
+        // Create the filter from the texture
+        DisplacementMapFilter::with_displacement_map(&displacement_texture, x_offset, y_offset, mult_x, mult_y, self.gamma)
+    }
+
+    ///
     /// Draws the sprite with the specified ID
     ///
     pub (crate) fn sprite_draw_with_filters(&mut self, sprite_id: canvas::SpriteId, filters: Vec<canvas::TextureFilter>) {
@@ -173,14 +293,20 @@ where
                     let upper_left  = canvas_transform.transform_point(upper_left.0, upper_left.1);
                     let upper_right = canvas_transform.transform_point(upper_right.0, upper_right.1);
 
+                    // Create the filter for this rendering
+                    let render_min_x  = lower_left.0.min(upper_left.0).min(lower_right.0).min(upper_right.0);
+                    let render_max_x  = lower_left.0.max(upper_left.0).max(lower_right.0).max(upper_right.0);
+                    let render_min_y  = lower_left.1.min(upper_left.1).min(lower_right.1).min(upper_right.1);
+                    let render_max_y  = lower_left.1.max(upper_left.1).max(lower_right.1).max(upper_right.1);
+                    let render_width  = render_max_x - render_min_x;
+                    let render_height = render_max_y - render_min_y;
+
+                    let filter: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>> = Arc::new(CombinedFilter::from_filters(filters.into_iter()
+                        .flat_map(|filter| self.sprite_filter(filter, render_width as _, render_height as _))));
+
                     // Get the z-index of where to render this sprite
                     let current_layer   = self.layers.get_mut(self.current_layer.0).unwrap();
                     let z_index         = current_layer.z_index;
-
-                    // TODO: actually pick a proper filter here
-                    let filter1: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>> = Arc::new(VerticalKernelFilter::with_gaussian_blur_radius(16.0 as _));
-                    let filter2: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>> = Arc::new(HorizontalKernelFilter::with_gaussian_blur_radius(16.0 as _));
-                    let filter: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>> = Arc::new(CombinedFilter::from_filters(vec![filter1, filter2]));
 
                     // Future stuff renders on top of the sprite
                     current_layer.z_index += 1;
