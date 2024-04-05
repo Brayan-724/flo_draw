@@ -3,9 +3,14 @@ use flo_render_software::pixel::*;
 use flo_render_software::render::*;
 use flo_render_software::scanplan::*;
 
+use futures::prelude::*;
+use futures::stream;
+use futures::executor;
+
 use flo_render_software::canvas::*;
 
 use std::time::{Instant};
+use std::sync::*;
 
 ///
 /// Draws two copies of the mascot as sprites using dynamic textures
@@ -13,6 +18,7 @@ use std::time::{Instant};
 pub fn main() {
     // Decode
     let mut mascot = decode_drawing(MASCOT.chars()).collect::<Result<Vec<Draw>, _>>().unwrap();
+    let lato       = CanvasFontFace::from_slice(include_bytes!("../test_data/Lato-Regular.ttf"));
 
     // Take out the transform steps
     mascot.remove(0);
@@ -35,10 +41,34 @@ pub fn main() {
 
     // Draw the sprite using a dynamic texture
     let mut draw_sprite = vec![];
+
+    // Define sprite 1 as our mask
+    draw_sprite.define_font_data(FontId(1), Arc::clone(&lato));
+    draw_sprite.sprite(SpriteId(1));
+    draw_sprite.clear_sprite();
+    draw_sprite.fill_color(Color::Rgba(0.0, 0.0, 0.0, 1.0));
+    draw_sprite.set_font_size(FontId(1), 200.0);
+    draw_sprite.begin_line_layout(500.0, 350.0, TextAlignment::Center);
+    draw_sprite.layout_text(FontId(1), "MASK".to_string());
+    draw_sprite.draw_text_layout();
+
+    draw_sprite.new_path();
+    draw_sprite.circle(500.0, 600.0, 100.0);
+    draw_sprite.fill();
+
+    draw_sprite.new_path();
+    draw_sprite.circle(500.0, 200.0, 100.0);
+    draw_sprite.fill();
+
+    // Render the mask to texture 2
+    draw_sprite.layer(LayerId(0));
+    draw_sprite.create_texture(TextureId(2), 512, 512, TextureFormat::Rgba);
+    draw_sprite.set_texture_from_sprite(TextureId(2), SpriteId(1), 0.0, 1000.0, 1000.0, -1000.0);
+
     draw_sprite.sprite_transform(SpriteTransform::Translate(-300.0, 0.0));
     draw_sprite.draw_sprite(SpriteId(0));
     draw_sprite.sprite_transform(SpriteTransform::Translate(600.0, 0.0));
-    draw_sprite.draw_sprite_with_filters(SpriteId(0), vec![TextureFilter::GaussianBlur(16.0)]);
+    draw_sprite.draw_sprite_with_filters(SpriteId(0), vec![TextureFilter::Mask(TextureId(2))]);
     draw_sprite.sprite_transform(SpriteTransform::Identity);
     draw_sprite.sprite_transform(SpriteTransform::Translate(500.0, 500.0));
     draw_sprite.sprite_transform(SpriteTransform::Rotate(45.0));
@@ -49,6 +79,11 @@ pub fn main() {
     draw_sprite.sprite_transform(SpriteTransform::Rotate(-45.0));
     draw_sprite.sprite_transform(SpriteTransform::Scale(0.2, 0.2));
     draw_sprite.draw_sprite(SpriteId(0));
+
+    let drawing = stream::iter(draw_sprite);
+    let drawing = drawing_with_laid_out_text(drawing);
+    let drawing = drawing_with_text_as_paths(drawing);
+    let draw_sprite = executor::block_on(async move { drawing.collect::<Vec<_>>().await });
 
     canvas_drawing.draw(draw_sprite.iter().cloned());
 
