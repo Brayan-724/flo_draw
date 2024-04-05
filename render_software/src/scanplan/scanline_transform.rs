@@ -78,6 +78,14 @@ impl ScanlineTransform {
     /// Converts a range in pixel coordinates to source coordinates
     ///
     #[inline]
+    pub fn fractional_pixel_x_to_source_x(&self, pixel_x: f64) -> f64 {
+        (pixel_x * self.scale_recip) - self.offset
+    }
+
+    ///
+    /// Converts a range in pixel coordinates to source coordinates
+    ///
+    #[inline]
     pub fn pixel_range_to_x(&self, pixels: &Range<i32>) -> Range<f64> {
         self.pixel_x_to_source_x(pixels.start)..self.pixel_x_to_source_x(pixels.end)
     }
