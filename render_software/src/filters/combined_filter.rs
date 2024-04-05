@@ -31,12 +31,20 @@ where
 
 impl<TPixel, const N: usize> PixelFilter for CombinedFilter<TPixel, N>
 where
-    TPixel: Pixel<N>,
+    TPixel: 'static + Pixel<N>,
 {
     type Pixel = TPixel;
 
-    fn with_scale(&self, _x_scale: f64, _y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
-        None
+    fn with_scale(&self, x_scale: f64, y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
+        let new_filters = self.filters.iter()
+            .map(|old_filter| {
+                old_filter.with_scale(x_scale, y_scale).unwrap_or_else(|| Arc::clone(old_filter))
+            })
+            .collect();
+
+        Some(Arc::new(Self {
+            filters: new_filters
+        }))
     }
 
     fn input_lines(&self) -> (usize, usize) {
