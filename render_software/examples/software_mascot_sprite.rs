@@ -44,6 +44,11 @@ pub fn main() {
     draw_sprite.sprite_transform(SpriteTransform::Rotate(45.0));
     draw_sprite.sprite_transform(SpriteTransform::Scale(0.2, 0.2));
     draw_sprite.draw_sprite_with_filters(SpriteId(0), vec![TextureFilter::GaussianBlur(16.0)]);
+    draw_sprite.sprite_transform(SpriteTransform::Identity);
+    draw_sprite.sprite_transform(SpriteTransform::Translate(400.0, 450.0));
+    draw_sprite.sprite_transform(SpriteTransform::Rotate(-45.0));
+    draw_sprite.sprite_transform(SpriteTransform::Scale(0.2, 0.2));
+    draw_sprite.draw_sprite(SpriteId(0));
 
     canvas_drawing.draw(draw_sprite.iter().cloned());
 
