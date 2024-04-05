@@ -12,7 +12,7 @@ where
     TPixel: Pixel<N>,
 {
     /// Lookup table used to convert the linear values back to gamma-corrected values (so that displacements are linear based on a gamma-corrected input RGBA texture)
-    gamma_lookup:       Box<[u16; 65536]>,
+    gamma_lookup:       Arc<[u16; 65536]>,
 
     /// The displacement map is a texture used to get the distance to move each point from the source texture
     displacement_map:   Arc<U16LinearTexture>,
@@ -53,7 +53,7 @@ where
         }
 
         DisplacementMapFilter {
-            gamma_lookup:       Box::new(gamma_lookup),
+            gamma_lookup:       Arc::new(gamma_lookup),
             displacement_map:   Arc::clone(map),
             offset_x:           offset_x,
             offset_y:           offset_y,
@@ -107,12 +107,20 @@ where
 
 impl<TPixel, const N: usize> PixelFilter for DisplacementMapFilter<TPixel, N>
 where
-    TPixel: Pixel<N>,
+    TPixel: 'static + Pixel<N>,
 {
     type Pixel = TPixel;
 
-    fn with_scale(&self, _x_scale: f64, _y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
-        None
+    fn with_scale(&self, x_scale: f64, y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
+        Some(Arc::new(DisplacementMapFilter { 
+            gamma_lookup:       Arc::clone(&self.gamma_lookup),
+            displacement_map:   Arc::clone(&self.displacement_map),
+            offset_x:           self.offset_x * x_scale,
+            offset_y:           self.offset_y * y_scale,
+            map_mult_x:         self.map_mult_x * x_scale,
+            map_mult_y:         self.map_mult_y * y_scale,
+            pixel:              PhantomData,
+        }))
     }
 
     fn input_lines(&self) -> (usize, usize) {
