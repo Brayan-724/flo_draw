@@ -178,7 +178,9 @@ where
                     let z_index         = current_layer.z_index;
 
                     // TODO: actually pick a proper filter here
-                    let filter: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>> = Arc::new(VerticalKernelFilter::with_gaussian_blur_radius(16.0 as _));
+                    let filter1: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>> = Arc::new(VerticalKernelFilter::with_gaussian_blur_radius(16.0 as _));
+                    let filter2: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>> = Arc::new(HorizontalKernelFilter::with_gaussian_blur_radius(16.0 as _));
+                    let filter: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>> = Arc::new(CombinedFilter::from_filters(vec![filter1, filter2]));
 
                     // Future stuff renders on top of the sprite
                     current_layer.z_index += 1;
