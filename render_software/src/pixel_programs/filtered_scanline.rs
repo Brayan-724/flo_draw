@@ -93,9 +93,12 @@ where
     fn draw_pixels(&self, data_cache: &PixelProgramRenderCache<Self::Pixel>, target: &mut [Self::Pixel], pixel_range: Range<i32>, x_transform: &ScanlineTransform, y_pos: f64, data: &Self::ProgramData) {
         use std::mem;
 
+        // TODO: a performance observation is that the version of this that only ever generated a single line was twice as fast as the version that generates the extra before/after lines
+        // (slowdowns due to the extra iterators, collections, etc?)
+
         // Fetch the 'buffer' area of extra pixels to render for the filter
         let (before_x, after_x) = data.filter.extra_columns();
-        let (before_y, after_y) = data.filter.input_lines();        // TODO - need to fetch the extra lines needed by the filter
+        let (before_y, after_y) = data.filter.input_lines();
 
         // Use the scale and translation factors to get the transform for the edges
         let scan_ypos       = y_pos * data.scale.1 + data.translate.1;
