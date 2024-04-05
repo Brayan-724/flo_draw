@@ -220,7 +220,31 @@ where
                         let transform           = transform * sprite_transform;
 
                         // Use the transformed sprite program
-                        todo!();
+                        let edges = sprite_layer.edges.transform(&transform);
+
+                        let data    = FilteredScanlineData::new(Arc::new(edges), (1.0, 1.0), (0.0, 0.0), filter);
+                        let data_id = self.program_cache.program_cache.store_program_data(&self.program_cache.filtered_sprite, &mut self.program_data_cache, data);
+
+                        // Shape is a transparent rectangle that runs this program
+                        let shape_descriptor = ShapeDescriptor {
+                            programs:   smallvec![data_id],
+                            is_opaque:  false,
+                            z_index:    z_index,
+                        };
+                        let shape_id = ShapeId::new();
+
+                        // Create a rectangle edge for this data
+                        let lower_left  = canvas::Coord2(lower_left.0 as _, lower_left.1 as _);
+                        let lower_right = canvas::Coord2(lower_right.0 as _, lower_right.1 as _);
+                        let upper_left  = canvas::Coord2(upper_left.0 as _, upper_left.1 as _);
+                        let upper_right = canvas::Coord2(upper_right.0 as _, upper_right.1 as _);
+
+                        let sprite_edge = PolylineNonZeroEdge::new(shape_id, vec![lower_left, lower_right, upper_right, upper_left, lower_left]);
+                        let sprite_edge: Arc<dyn EdgeDescriptor> = Arc::new(sprite_edge);
+
+                        // Store in the current layer
+                        current_layer.edges.add_shape(shape_id, shape_descriptor, iter::once(sprite_edge));
+                        current_layer.used_data.push(data_id);
                     }
 
                     // This 'unprepares' the current layer as for any other drawing operation
