@@ -93,14 +93,16 @@ where
             let mut next_input  = input_lines.iter().map(|pixels| *pixels).collect::<Vec<&[Self::Pixel]>>();
 
             // Middle filters all process from output to output
-            for filter in self.filters.iter().skip(1).take(self.filters.len()-1) {
+            for filter in self.filters.iter().take(self.filters.len()-1) {
                 // Number of pixels that will be trimmed from the input
                 let (left, right)   = filter.extra_columns();
                 let (top, bottom)   = filter.input_lines();
 
                 // Filter each line into the output
                 for output_line in 0..(height-bottom-top) {
-                    filter.filter_line(y_pos + output_line, &next_input[0..height], &mut output[output_line][0..(width-left-right)]);
+                    filter.filter_line(y_pos + output_line, 
+                        &next_input[output_line..(output_line+1+top+bottom)], 
+                        &mut output[output_line][0..(width-left-right)]);
                 }
 
                 // Width and height are updated for the next iteration
