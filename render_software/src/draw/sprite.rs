@@ -142,8 +142,8 @@ where
             GaussianBlur(radius) => {
                 let (scale_x, scale_y) = self.sprite_filter_pixel_scale();
 
-                let vertical: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>    = Arc::new(VerticalKernelFilter::with_gaussian_blur_radius(radius as f64 * scale_y));
-                let horizontal: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>  = Arc::new(HorizontalKernelFilter::with_gaussian_blur_radius(radius as f64 * scale_x));
+                let vertical: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>    = Arc::new(VerticalGaussianBlurFilter::with_gaussian_blur_radius(radius as f64 * scale_y));
+                let horizontal: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>  = Arc::new(HorizontalGaussianBlurFilter::with_gaussian_blur_radius(radius as f64 * scale_x));
 
                 vec![vertical, horizontal]
             }
