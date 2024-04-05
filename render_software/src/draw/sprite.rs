@@ -140,8 +140,10 @@ where
         // TODO: for gaussian blur we can apply both filters at the same time (which is more efficient, but a bit more complicated to implement)
         let filters = match filter {
             GaussianBlur(radius) => {
-                let vertical: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>    = Arc::new(VerticalKernelFilter::with_gaussian_blur_radius(radius as _));
-                let horizontal: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>  = Arc::new(HorizontalKernelFilter::with_gaussian_blur_radius(radius as _));
+                let (scale_x, scale_y) = self.sprite_filter_pixel_scale();
+
+                let vertical: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>    = Arc::new(VerticalKernelFilter::with_gaussian_blur_radius(radius as f64 * scale_y));
+                let horizontal: Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>  = Arc::new(HorizontalKernelFilter::with_gaussian_blur_radius(radius as f64 * scale_x));
 
                 vec![vertical, horizontal]
             }
@@ -164,6 +166,29 @@ where
         };
 
         filters
+    }
+
+    ///
+    /// Returns the x and y scale for the current transform setting
+    ///
+    #[inline]
+    fn sprite_filter_pixel_scale(&self) -> (f64, f64) {
+        // Figure out the size of a pixel
+        let transform   = &self.current_state.transform;
+
+        let (x1, y1)    = transform.transform_point(0.0, 0.0);
+        let (x2, y2)    = transform.transform_point(1.0, 1.0);
+
+        let min_x       = f32::min(x1, x2);
+        let min_y       = f32::min(y1, y2);
+        let max_x       = f32::max(x1, x2);
+        let max_y       = f32::max(y1, y2);
+
+        // Size relative to the framebuffer size
+        let size_w      = (max_x - min_x)/2.0;
+        let size_h      = (max_y - min_y)/2.0;
+
+        (size_w as f64, size_h as f64)
     }
 
     ///
@@ -200,7 +225,6 @@ where
             }
         };
 
-
         let (mask_width, mask_height) = (mask_texture.width(), mask_texture.height());
         let mult_x = mask_width as f64 / texture_width as f64;
         let mult_y = mask_height as f64 / texture_height as f64;
@@ -214,6 +238,7 @@ where
     fn sprite_displacement_filter(&mut self, displacement_texture_id: canvas::TextureId, x_offset: f64, y_offset: f64, width: f64, height: f64) -> DisplacementMapFilter<TPixel, N> {
         // Fetch the size of the target texture
         let (texture_width, texture_height) = (width, height);
+        let (scale_x, scale_y) = self.sprite_filter_pixel_scale();
 
         // Read the displacement map texture (we use a 1x1 empty texture if the texture is missing)
         let displacement_texture = loop {
@@ -247,7 +272,7 @@ where
         let mult_y = displ_height as f64 / texture_height as f64;
 
         // Create the filter from the texture
-        DisplacementMapFilter::with_displacement_map(&displacement_texture, x_offset, y_offset, mult_x, mult_y, self.gamma)
+        DisplacementMapFilter::with_displacement_map(&displacement_texture, x_offset * scale_x, y_offset * scale_y, mult_x, mult_y, self.gamma)
     }
 
     ///
