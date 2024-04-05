@@ -117,8 +117,8 @@ where
             displacement_map:   Arc::clone(&self.displacement_map),
             offset_x:           self.offset_x * x_scale,
             offset_y:           self.offset_y * y_scale,
-            map_mult_x:         self.map_mult_x * x_scale,
-            map_mult_y:         self.map_mult_y * y_scale,
+            map_mult_x:         self.map_mult_x / x_scale,
+            map_mult_y:         self.map_mult_y / y_scale,
             pixel:              PhantomData,
         }))
     }
