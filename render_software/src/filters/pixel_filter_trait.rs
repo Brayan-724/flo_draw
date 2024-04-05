@@ -10,6 +10,15 @@ pub trait PixelFilter {
     type Pixel : Send;
 
     ///
+    /// Rescales this filter so that it applies to a rendering scaled up by `new_filter_scale`. Returns None if this filter can be
+    /// used without rescaling it.
+    ///
+    /// Eg, if we supply a scale factor of 2 to a gaussian blur filter, this implies doubling the resolution so the filter returned
+    /// here will have double the blur radius. 
+    ///
+    fn with_scale(&self, _x_scale: f64, _y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>>;
+
+    ///
     /// Retrieves the number of extra lines that are required to produce a single output line (above and below)
     ///
     /// The result here is the number of lines above the current line and the number of lines below the current line that are required.
@@ -38,6 +47,11 @@ where
     TPixel: Send,
 {
     type Pixel = TPixel;
+
+    #[inline]
+    fn with_scale(&self, x_scale: f64, y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
+        (**self).with_scale(x_scale, y_scale)
+    }
 
     #[inline]
     fn input_lines(&self) -> (usize, usize) {

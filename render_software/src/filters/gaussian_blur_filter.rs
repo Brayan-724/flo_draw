@@ -2,6 +2,7 @@ use super::pixel_filter_trait::*;
 use crate::pixel::*;
 
 use std::f64;
+use std::sync::*;
 
 ///
 /// Computes the 1D weights for a gaussian blur for a particular standard deviation
@@ -111,6 +112,11 @@ where
     type Pixel = TPixel;
 
     #[inline]
+    fn with_scale(&self, _x_scale: f64, _y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
+        None
+    }
+
+    #[inline]
     fn input_lines(&self) -> (usize, usize) {
         (0, 0)
     }
@@ -144,6 +150,11 @@ where
     TPixel: Pixel<N>,
 {
     type Pixel = TPixel;
+
+    #[inline]
+    fn with_scale(&self, _x_scale: f64, _y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
+        None
+    }
 
     fn input_lines(&self) -> (usize, usize) {
         (self.kernel.len()-1, self.kernel.len()-1)

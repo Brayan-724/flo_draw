@@ -35,6 +35,10 @@ where
 {
     type Pixel = TPixel;
 
+    fn with_scale(&self, _x_scale: f64, _y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
+        None
+    }
+
     fn input_lines(&self) -> (usize, usize) {
         // The combined value is found by summing the requested values from all of the filters we're combining
         let mut top     = 0;

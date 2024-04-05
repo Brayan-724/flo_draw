@@ -1,6 +1,8 @@
 use super::pixel_filter_trait::*;
 use crate::pixel::*;
 
+use std::sync::*;
+
 ///
 /// The alpha blend filter
 ///
@@ -30,6 +32,11 @@ where
     TPixel: Pixel<N>,
 {
     type Pixel = TPixel;
+
+    #[inline]
+    fn with_scale(&self, _x_scale: f64, _y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
+        None
+    }
 
     #[inline]
     fn input_lines(&self) -> (usize, usize) {

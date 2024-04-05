@@ -74,6 +74,11 @@ where
     type Pixel = TPixel;
 
     #[inline]
+    fn with_scale(&self, _x_scale: f64, _y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
+        None
+    }
+
+    #[inline]
     fn input_lines(&self) -> (usize, usize) {
         (0, 0)
     }
