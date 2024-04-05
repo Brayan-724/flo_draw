@@ -77,6 +77,38 @@ where
     kernel: Box<[TPixel::Component]>,
 }
 
+///
+/// Filter that applies a one-dimensional gaussian blur in the horizontal direction
+///
+/// This will scale according to pixel size, unlike the kernel filter
+///
+pub struct HorizontalGaussianBlurFilter<TPixel, const N: usize>
+where
+    TPixel: Pixel<N>,
+{
+    /// The radius that this filter was generated for
+    radius: f64,
+
+    /// Each pixel is multiplied by the values in the kernel, then summed. We only store half the kernel here, with the central pixel's proportion at the start
+    kernel: HorizontalKernelFilter<TPixel, N>,
+}
+
+///
+/// Filter that applies a one-dimensional gaussian blur in the vertical direction
+///
+/// This will scale according to pixel size, unlike the kernel filter
+///
+pub struct VerticalGaussianBlurFilter<TPixel, const N: usize>
+where
+    TPixel: Pixel<N>,
+{
+    /// The radius that this filter was generated for
+    radius: f64,
+
+    /// Each pixel is multiplied by the values in the kernel, then summed. We only store half the kernel here, with the central pixel's proportion at the start
+    kernel: VerticalKernelFilter<TPixel, N>,
+}
+
 impl<TPixel, const N: usize> HorizontalKernelFilter<TPixel, N>
 where
     TPixel: Pixel<N>,
@@ -105,6 +137,36 @@ where
     }
 }
 
+impl<TPixel, const N: usize> HorizontalGaussianBlurFilter<TPixel, N>
+where
+    TPixel: Pixel<N>,
+{
+    ///
+    /// Creates a horizontal filter with a particular radius
+    ///
+    pub fn with_gaussian_blur_radius(radius: f64) -> Self {
+        Self {
+            radius: radius,
+            kernel: HorizontalKernelFilter::with_gaussian_blur_radius(radius),
+        }
+    }
+}
+
+impl<TPixel, const N: usize> VerticalGaussianBlurFilter<TPixel, N>
+where
+    TPixel: Pixel<N>,
+{
+    ///
+    /// Creates a horizontal filter with a particular radius
+    ///
+    pub fn with_gaussian_blur_radius(radius: f64) -> Self {
+        Self {
+            radius: radius,
+            kernel: VerticalKernelFilter::with_gaussian_blur_radius(radius),
+        }
+    }
+}
+
 impl<TPixel, const N: usize> PixelFilter for HorizontalKernelFilter<TPixel, N>
 where
     TPixel: Pixel<N>,
@@ -126,6 +188,7 @@ where
         (self.kernel.len()-1, self.kernel.len()-1)
     }
 
+    #[inline]
     fn filter_line(&self, _ypos: usize, input_lines: &[&[Self::Pixel]], output_line: &mut [Self::Pixel]) {
         let input_line  = input_lines[0];
         let kernel      = &self.kernel;
@@ -164,6 +227,7 @@ where
         (0, 0)
     }
 
+    #[inline]
     fn filter_line(&self, _ypos: usize, input_lines: &[&[Self::Pixel]], output_line: &mut [Self::Pixel]) {
         let kernel      = &self.kernel;
         let kernel_len  = kernel.len();
@@ -180,5 +244,57 @@ where
 
             output_line[idx] = pixel;
         }
+    }
+}
+
+impl<TPixel, const N: usize> PixelFilter for HorizontalGaussianBlurFilter<TPixel, N>
+where
+    TPixel: 'static + Pixel<N>,
+{
+    type Pixel = TPixel;
+
+    fn with_scale(&self, x_scale: f64, _y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
+        let new_filter = Self::with_gaussian_blur_radius(self.radius * x_scale);
+        Some(Arc::new(new_filter))
+    }
+
+    #[inline]
+    fn input_lines(&self) -> (usize, usize) {
+        self.kernel.input_lines()
+    }
+
+    #[inline]
+    fn extra_columns(&self) -> (usize, usize) {
+        self.kernel.extra_columns()
+    }
+
+    fn filter_line(&self, y_pos: usize, input_lines: &[&[Self::Pixel]], output_line: &mut [Self::Pixel]) {
+        self.kernel.filter_line(y_pos, input_lines, output_line);
+    }
+}
+
+impl<TPixel, const N: usize> PixelFilter for VerticalGaussianBlurFilter<TPixel, N>
+where
+    TPixel: 'static + Pixel<N>,
+{
+    type Pixel = TPixel;
+
+    fn with_scale(&self, _x_scale: f64, y_scale: f64) -> Option<Arc<dyn Send + Sync + PixelFilter<Pixel=Self::Pixel>>> {
+        let new_filter = Self::with_gaussian_blur_radius(self.radius * y_scale);
+        Some(Arc::new(new_filter))
+    }
+
+    #[inline]
+    fn input_lines(&self) -> (usize, usize) {
+        self.kernel.input_lines()
+    }
+
+    #[inline]
+    fn extra_columns(&self) -> (usize, usize) {
+        self.kernel.extra_columns()
+    }
+
+    fn filter_line(&self, y_pos: usize, input_lines: &[&[Self::Pixel]], output_line: &mut [Self::Pixel]) {
+        self.kernel.filter_line(y_pos, input_lines, output_line);
     }
 }
