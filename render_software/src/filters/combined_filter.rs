@@ -22,7 +22,7 @@ where
     ///
     /// Creates a combined filter from a set of input filters (all the input filters will be applied to the result)
     ///
-    pub fn from_filter(filters: impl IntoIterator<Item=Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>>) -> Self {
+    pub fn from_filters(filters: impl IntoIterator<Item=Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>>) -> Self {
         CombinedFilter {
             filters: filters.into_iter().collect(),
         }
