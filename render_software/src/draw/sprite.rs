@@ -344,7 +344,7 @@ where
                         let scale       = (scale_x, scale_y);
 
                         // Create the brush data
-                        let data    = FilteredScanlineData::new(sprite_layer.edges, scale, translate, filter);
+                        let data    = Arc::new(FilteredScanlineData::new(sprite_layer.edges, scale, translate, filter));
                         let data_id = self.program_cache.program_cache.store_program_data(&self.program_cache.filtered_sprite, &mut self.program_data_cache, data);
 
                         // Shape is a transparent rectangle that runs this program
@@ -375,7 +375,7 @@ where
                         // Use the transformed sprite program
                         let edges = sprite_layer.edges.transform(&transform);
 
-                        let data    = FilteredScanlineData::new(Arc::new(edges), (1.0, 1.0), (0.0, 0.0), filter);
+                        let data    = Arc::new(FilteredScanlineData::new(Arc::new(edges), (1.0, 1.0), (0.0, 0.0), filter));
                         let data_id = self.program_cache.program_cache.store_program_data(&self.program_cache.filtered_sprite, &mut self.program_data_cache, data);
 
                         // Shape is a transparent rectangle that runs this program

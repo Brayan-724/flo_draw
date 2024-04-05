@@ -10,6 +10,22 @@ use std::sync::*;
 use std::marker::{PhantomData};
 
 ///
+/// Applies a filter to the result of rendering a scanline program, scaling it to match the frame transform
+///
+/// The full rendering is only applied to the region of the scanlines that are actually rendered on screen
+///
+pub struct FilteredScanlineFrameProgram<TEdgeDescriptor, TPixel, TPlanner> {
+    /// The filter to apply to the output of the scanline program
+    pixel: PhantomData<Mutex<TPixel>>,
+
+    // Edge descriptor data
+    edge: PhantomData<TEdgeDescriptor>,
+
+    /// The pixel planner
+    planner: TPlanner,
+}
+
+///
 /// Applies a filter to the result of rendering a scanline program
 ///
 /// The full rendering is only applied to the region of the scanlines that are actually rendered on screen
@@ -64,6 +80,21 @@ where
     }
 }
 
+impl<TEdgeDescriptor, TPixel, TPlanner> Default for FilteredScanlineFrameProgram<TEdgeDescriptor, TPixel, TPlanner> 
+where
+    TPixel:             'static + AlphaBlend + Send + Copy + Clone + Default,
+    TEdgeDescriptor:    EdgeDescriptor,
+    TPlanner:           Send + Sync + Default + ScanPlanner<Edge=TEdgeDescriptor>,
+{
+    fn default() -> Self {
+        Self {
+            pixel:      PhantomData,
+            edge:       PhantomData,
+            planner:    TPlanner::default(),
+        }
+    }
+}
+
 impl<TEdgeDescriptor, TFilter> FilteredScanlineData<TEdgeDescriptor, TFilter>
 where
     TEdgeDescriptor:    EdgeDescriptor,
@@ -79,6 +110,41 @@ where
     }
 }
 
+impl<TEdgeDescriptor, TPixel, TPlanner> PixelProgramForFrame for FilteredScanlineFrameProgram<TEdgeDescriptor, TPixel, TPlanner>
+where
+    TPixel:             'static + AlphaBlend + Send + Copy + Clone + Default,
+    TEdgeDescriptor:    EdgeDescriptor,
+    TPlanner:           Default + Send + Sync + ScanPlanner<Edge=TEdgeDescriptor>,
+{
+    type Program    = FilteredScanlineProgram<TEdgeDescriptor, Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>, TPlanner>;
+    type FrameData  = FilteredScanlineData<TEdgeDescriptor, Arc<dyn Send + Sync + PixelFilter<Pixel=TPixel>>>;
+
+    fn program_for_frame(&self, pixel_size: PixelSize, program_data: &Arc<Self::FrameData>) -> (Self::Program, <Self::Program as PixelProgram>::ProgramData) {
+        let program = FilteredScanlineProgram::default();
+
+        if pixel_size.0 == 1.0 {
+            // Pixel is the same size
+            (program, Arc::clone(program_data))
+        } else {
+            // Adjust the filter
+            if let Some(new_filter) = program_data.filter.with_scale(1.0/pixel_size.0, 1.0/pixel_size.0) {
+                let new_program_data = FilteredScanlineData {
+                    edges:      program_data.edges.clone(),
+                    scale:      program_data.scale,
+                    translate:  program_data.translate,
+                    scanlines:  RwLock::new(HashMap::new()),
+                    filter:     new_filter,
+                };
+
+                (program, Arc::new(new_program_data))
+            } else {
+                // Filter isn't changed
+                (program, Arc::clone(program_data))
+            }
+        }
+    }
+}
+
 impl<TEdgeDescriptor, TFilter, TPlanner> PixelProgram for FilteredScanlineProgram<TEdgeDescriptor, TFilter, TPlanner>
 where
     TFilter::Pixel:     'static + AlphaBlend + Copy + Clone + Default,
@@ -87,7 +153,7 @@ where
     TPlanner:           Send + Sync + ScanPlanner<Edge=TEdgeDescriptor>,
 {
     type Pixel          = TFilter::Pixel;
-    type ProgramData    = FilteredScanlineData<TEdgeDescriptor, TFilter>;
+    type ProgramData    = Arc<FilteredScanlineData<TEdgeDescriptor, TFilter>>;
 
     #[inline]
     fn draw_pixels(&self, data_cache: &PixelProgramRenderCache<Self::Pixel>, target: &mut [Self::Pixel], pixel_range: Range<i32>, x_transform: &ScanlineTransform, y_pos: f64, data: &Self::ProgramData) {
