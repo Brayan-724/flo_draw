@@ -7,9 +7,6 @@ use flo_render_software::canvas::*;
 
 use std::time::{Instant};
 
-use std::sync::*;
-use std::f64;
-
 ///
 /// Draws two copies of the mascot as sprites using dynamic textures
 ///
@@ -36,37 +33,12 @@ pub fn main() {
 
     canvas_drawing.draw(setup_sprite.iter().cloned());
 
-    let mut draw_sprite = vec![];
-
-    // Create a displacement map texture as texture 1
-    let flo_w = 512;
-    let flo_h = 512;
-    draw_sprite.create_texture(TextureId(1), flo_w as _, flo_h as _, TextureFormat::Rgba);
-    draw_sprite.set_texture_bytes(TextureId(1), 0, 0, flo_w as _, flo_h as _,
-        Arc::new((0..(flo_w*flo_h)).into_iter()
-            .flat_map(|pixel_num| {
-                let x_pos       = pixel_num % flo_w;
-                let y_pos       = pixel_num / flo_w;
-
-                let x_factor    = (x_pos as f64) / (flo_w as f64);
-                let y_factor    = (y_pos as f64) / (flo_h as f64);
-                let x_factor    = x_factor * 2.0 * f64::consts::PI;
-                let y_factor    = y_factor * 2.0 * f64::consts::PI;
-                let x_factor    = x_factor * 8.0;
-                let y_factor    = y_factor * 7.0;
-
-                let x_seq       = (x_factor.sin() + 1.0)/2.0;
-                let y_seq       = (y_factor.cos() + 1.0)/2.0;
-
-                [(y_seq*255.0) as u8, (x_seq*255.0) as u8, 0, 255]
-            })
-            .collect::<Vec<_>>()));
-
     // Draw the sprite using a dynamic texture
+    let mut draw_sprite = vec![];
     draw_sprite.sprite_transform(SpriteTransform::Translate(-300.0, 0.0));
     draw_sprite.draw_sprite(SpriteId(0));
     draw_sprite.sprite_transform(SpriteTransform::Translate(600.0, 0.0));
-    draw_sprite.draw_sprite_with_filters(SpriteId(0), vec![TextureFilter::DisplacementMap(TextureId(1), 16.0, 16.0)]);
+    draw_sprite.draw_sprite_with_filters(SpriteId(0), vec![TextureFilter::GaussianBlur(16.0)]);
     draw_sprite.sprite_transform(SpriteTransform::Identity);
     draw_sprite.sprite_transform(SpriteTransform::Translate(500.0, 500.0));
     draw_sprite.sprite_transform(SpriteTransform::Rotate(45.0));
