@@ -100,20 +100,20 @@ where
         // Use the scale and translation factors to get the transform for the edges
         let scan_ypos       = y_pos * data.scale.1 + data.translate.1;
         let scan_transform  = x_transform.transform(data.scale.0, data.translate.0);
-        let scan_pixel_y    = scan_transform.source_x_to_pixels(scan_ypos);
+        let pixel_ypos      = x_transform.source_x_to_pixels(y_pos);
 
         // Try to retrieve the scanline, or plan a new one if needed
         // TODO: reset scanlines if the x-transform or the width has changed (maybe also if the render height is changed)
         let render_scanlines = (-(before_y as i64)..=(after_y as i64))
             .map(|y_offset| {
-                // Assume that pixels are square and use the x-transform to convert y positions
-                // TODO: pixels won't be square if the source is scaled in a non-uniform way
-                let scan_pixel_y    = scan_pixel_y + (y_offset as f64);
-                let scan_ypos       = scan_transform.fractional_pixel_x_to_source_x(scan_pixel_y);
+                // Assume that pixels are square and use the x-transform to convert y positions. Note that the offset is in 'canvas' pixels and not the transformed 'sprite' pixels
+                let pixel_ypos  = pixel_ypos + (y_offset as f64);
+                let ypos        = x_transform.fractional_pixel_x_to_source_x(pixel_ypos);
+                let scan_ypos   = ypos * data.scale.1 + data.translate.1;
 
                 // TODO: 'to_bits()' here will result in cache misses (slower perf, higher memory usage)
                 let scanlines = data.scanlines.read().unwrap();
-                if let Some(existing_scanline) = scanlines.get(&scan_pixel_y.to_bits()) {
+                if let Some(existing_scanline) = scanlines.get(&pixel_ypos.to_bits()) {
                     // Re-use the previously calculated scanline
                     Arc::clone(existing_scanline)
                 } else {
@@ -134,7 +134,7 @@ where
                     mem::swap(&mut new_scanline[0].1, &mut new_plan);
                     let new_scanline = Arc::new(new_plan);
 
-                    scanlines.insert(scan_pixel_y.to_bits(), new_scanline.clone());
+                    scanlines.insert(pixel_ypos.to_bits(), new_scanline.clone());
 
                     new_scanline
                 }
