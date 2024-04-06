@@ -47,7 +47,7 @@ where
     ///
     /// Each layer of the stack is the same length, but only the bytes in the range are relevant for the next layer
     ///
-    #[inline(never)]
+    #[inline]
     pub fn push_entry(&mut self, range: Range<usize>) {
         if let Some(mut new_entry) = self.ready_stack.pop() {
             // Copy into the new entry from the existing entry (we already know this is large enough as it was copied earlier on)
