@@ -11,7 +11,7 @@ where
     TEdge:                  EdgeDescriptor,
     TScanPlanner:           ScanPlanner<Edge=TEdge>,
     TProgramRunner:         PixelProgramRunner,
-    TProgramRunner::TPixel: 'static + Send + Copy + AlphaBlend,
+    TProgramRunner::TPixel: 'static + Send + Default + Copy + AlphaBlend,
 {
     /// The region renderer takes instances of this type and uses them to generate pixel values in a region
     type RegionRenderer = EdgePlanRegionRenderer<TEdge, TScanPlanner, ScanlineRenderer<TProgramRunner>>;

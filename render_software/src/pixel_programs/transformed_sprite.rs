@@ -84,7 +84,7 @@ where
 impl<TPixel, TEdgeDescriptor, TPlanner> PixelProgramForFrame for TransformedSpriteProgram<TPixel, TEdgeDescriptor, TPlanner>
 where
     TEdgeDescriptor:    'static + EdgeDescriptor,
-    TPixel:             'static + Copy + Send + Sync + AlphaBlend,
+    TPixel:             'static + Copy + Default + Send + Sync + AlphaBlend,
     TPlanner:           Send + Sync + Default + ScanPlanner<Edge=Arc<dyn EdgeDescriptor>>,
 {
     /// The type of the pixel program that this will run

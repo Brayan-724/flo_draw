@@ -16,7 +16,7 @@ pub struct BufferStack<'a, TPixel> {
 
 impl<'a, TPixel> BufferStack<'a, TPixel> 
 where
-    TPixel: Copy,
+    TPixel: Default + Copy,
 {
     ///
     /// Creates a new buffer stack
@@ -50,9 +50,7 @@ where
     #[inline]
     pub fn push_entry(&mut self, range: Range<usize>) {
         if let Some(mut new_entry) = self.ready_stack.pop() {
-            // Copy into the new entry from the existing entry (we already know this is large enough as it was copied earlier on)
-            // (Often the scanline plan will be writing to different ranges so copying the pixels again is not needed, but complicated blending plans might make things more difficult)
-
+            // Copy into the new entry from the existing entry (we already know this is large enough when it was allocated)
             if let Some(last) = self.stack.last() {
                 new_entry[range.clone()].copy_from_slice(&last[range]);
             } else {
@@ -63,12 +61,12 @@ where
             self.stack.push(new_entry);
         } else {
             // Create a new buffer by copying whatever was last in the list
-            let mut new_entry = Vec::with_capacity(range.len());
+            let mut new_entry = vec![TPixel::default(); self.first.len()];
 
             if let Some(last) = self.stack.last() {
-                new_entry.extend_from_slice(last);
+                new_entry[range.clone()].copy_from_slice(&last[range]);
             } else {
-                new_entry.extend_from_slice(self.first);
+                new_entry[range.clone()].copy_from_slice(&self.first[range]);
             }
 
             self.stack.push(new_entry);

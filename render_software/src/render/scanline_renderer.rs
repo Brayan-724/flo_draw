@@ -48,7 +48,7 @@ where
 impl<TProgramRunner> Renderer for ScanlineRenderer<TProgramRunner>
 where
     TProgramRunner:         PixelProgramRunner,
-    TProgramRunner::TPixel: 'static + Send + Copy + AlphaBlend,
+    TProgramRunner::TPixel: 'static + Send + Copy + Default + AlphaBlend,
 {
     type Region = ScanlineRenderRegion;
     type Source = ScanlinePlan;
@@ -226,7 +226,7 @@ where
 
 impl<'a, TPixel> Renderer for PixelProgramRenderCache<'a, TPixel>
 where
-    TPixel: 'static + Send + Copy + AlphaBlend,
+    TPixel: 'static + Send + Default + Copy + AlphaBlend,
 {
     type Region = ScanlineRenderRegion;
     type Source = ScanlinePlan;
@@ -242,7 +242,7 @@ where
 impl<TFn, TPixel> Renderer for BasicPixelProgramRunner<TFn, TPixel>
 where
     TFn:    Send + Sync + Fn(PixelProgramDataId, &mut [TPixel], Range<i32>, &ScanlineTransform, f64),
-    TPixel: 'static + Send + Copy + AlphaBlend,
+    TPixel: 'static + Send + Default + Copy + AlphaBlend,
 {
     type Region = ScanlineRenderRegion;
     type Source = ScanlinePlan;

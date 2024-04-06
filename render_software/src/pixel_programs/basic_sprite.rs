@@ -58,7 +58,7 @@ where
 impl<TPixel, TEdgeDescriptor, TPlanner> PixelProgram for BasicSpriteProgram<TPixel, TEdgeDescriptor, TPlanner>
 where
     TEdgeDescriptor:    'static + EdgeDescriptor,
-    TPixel:             'static + Send + Sync + Copy + AlphaBlend,
+    TPixel:             'static + Send + Sync + Copy + Default + AlphaBlend,
     TPlanner:            Send + Sync + ScanPlanner<Edge=TEdgeDescriptor>,
 {
     type Pixel          = TPixel;
