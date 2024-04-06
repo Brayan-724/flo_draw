@@ -102,24 +102,15 @@ where
                     },
 
                     PixelProgramPlan::Merge(ratio) => {
-                        // Can skip the factor multiplication step if the blend factor is 1.0 (which should be fairly common)
-                        if *ratio >= 1.0 {
-                            shadow_pixels.pop_entry(|src, dst| {
-                                for x in (x_range.start as usize)..(x_range.end as usize) {
-                                    dst[x] = src[x].source_over(dst[x]);
-                                }
-                            });
-                        } else {
-                            let ratio = TProgramRunner::TPixel::component_with_value(*ratio as _);
+                        let ratio = TProgramRunner::TPixel::component_with_value(*ratio as _);
 
-                            shadow_pixels.pop_entry(|src, dst| {
-                                let range           = (x_range.start as usize)..(x_range.end as usize);
+                        shadow_pixels.pop_entry(|src, dst| {
+                            let range           = (x_range.start as usize)..(x_range.end as usize);
 
-                                for (src, dst) in src[range.clone()].iter().zip(dst[range].iter_mut()) {
-                                    *dst = src.merge(*dst, ratio);
-                                }
-                            });
-                        }
+                            for (src, dst) in src[range.clone()].iter().zip(dst[range].iter_mut()) {
+                                *dst = src.merge(*dst, ratio);
+                            }
+                        });
                     }
 
                     PixelProgramPlan::LinearMerge(start, end) => {
